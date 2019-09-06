@@ -1,0 +1,2 @@
+iptables -F ntp
+iptables -X

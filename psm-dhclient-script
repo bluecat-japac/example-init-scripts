@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# psm-dhclient-script: updates interfaces managed by BlueCat PSM
+# Version 1 Michael Nonweiler Jan 2019
+# Copyright BlueCat Networks 2019. All rights reserved.
+
+# This script updates only interface IP address config.
+# This does NOT update resolv.conf, hostname, MTU, etc. These should be configured by cloud init.
+
+# source CLISH_PATH
+source /etc/profile.d/system_environment.sh
+
+modify_interface() {
+    echo /usr/local/bin/clish -c "configure interfaces" -c "modify ${interface}" "$@" -c save -c exit -c exit -c exit
+    /usr/local/bin/clish -c "configure interfaces" -c "modify ${interface}" "$@" -c save -c exit -c exit -c exit
+}
+
+mask2cidr () {
+   # Convert from subnet_mask to number of bits for CIDR
+   # For example: 255.255.255.0 ==> 24
+   # make x everything after the last 255.
+   local x=${1##*255.}
+   # set $1 = lookup table, $2 = number of chars stripped above * 2, to give number of bits, $3 = x with everything after the . stripped off
+   set -- 0^^^128^192^224^240^248^252^254^ $(( (${#1} - ${#x})*2 )) ${x%%.*}
+   # make x the above lookup table up to (not including) the number in $3
+   x=${1%%$3*}
+   # netmask is $2 + number of chars in $x
+   echo $(( $2 + (${#x}/4) ))
+}
+
+case "$reason" in
+
+    ### DHCPv4 Handlers
+
+    MEDIUM|ARPCHECK|ARPSEND)
+        # Do nothing
+        ;;
+    PREINIT)
+        # The DHCP client is requesting that an interface be
+        # configured as required in order to send packets prior to
+        # receiving an actual address. - dhclient-script(8)
+
+        # ensure interface is up
+        ip link set dev ${interface} up
+
+        # PSM will start with the old address configured
+        # address flushing is not implemented
+        ;;
+
+    BOUND|RENEW|REBIND|REBOOT)
+        # Note: alias IP not implemented
+
+        if [ -z "$old_ip_address" ] ||
+           [ "$old_ip_address" != "$new_ip_address" ]; then
+            # new IP has been leased or leased IP changed => set it
+            # (if IP has not changed then we assume PSM still has it)
+            new_mask=$(mask2cidr $new_subnet_mask)
+            if [ -n "$old_ip_address" ]; then
+                # leased IP has changed => flush old address
+                old_mask=$(mask2cidr $old_subnet_mask)
+                modify_interface -c "remove address ${old_ip_address}/${old_mask}" \
+                                 -c "add address ${new_ip_address}/${new_mask}"
+            else
+                modify_interface -c "add address ${new_ip_address}/${new_mask}"
+            fi
+
+            # MTU, routers, etc, not implemented. Use cloudinit
+        fi
+
+        ;;
+
+    EXPIRE|FAIL|RELEASE|STOP)
+        # Note: alias IP not implemented
+        if [ -n "$old_ip_address" ]; then
+            # flush leased IP
+            modify_interface -c "remove address ${old_ip_address}/${old_subnet_mask}"
+        fi
+
+        ;;
+
+    TIMEOUT)
+        # Note: alias IP not implemented
+        # set IP from recorded lease, (probably a NO-OP)
+        modify_interface -c "add address ${new_ip_address}/${new_subnet_mask}"
+
+        # Note: no attempt is made to test this IP is valid
+
+        ;;
+
+    ### DHCPv6 Handlers NOT IMPLEMENTED
+    PREINIT6|BOUND6|RENEW6|REBIND6|DEPREF6|EXPIRE6|RELEASE6|STOP6)
+        exit 2
+
+        ;;
+
+esac
+
+exit 0
+

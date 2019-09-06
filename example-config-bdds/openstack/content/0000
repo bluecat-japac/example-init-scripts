@@ -1,0 +1,126 @@
+   "implement_log_permissions_workaround" : true,
+   "syslog_servers_fixed_hostname": true,
+   "syslog": "172.16.197.101",
+   "hostname" : "vBDDS",
+   "routes" : [ { "gateway": "172.16.197.101", "network" : "10.0.0.0/8" } ],
+   "nameservers" : [ "8.8.8.8" ],
+   "snmp" : {
+      "trap_service" : {
+         "trapservers" : [
+            {
+               "host" : "192.168.16.3",
+               "v3" : {
+                  "privtype" : "DES",
+                  "ENCRYPTED-authphrase": "U2FsdGVkX193jsmKlAjhngS2CESA1/GmZWVNz5Rd0xAJXLNNKiSkywTNA8yagSB9",
+                  "securitylevel" : "priv",
+                  "authtype" : "SHA",
+                  "enabled" : true,
+                  "ENCRYPTED-privphrase": "U2FsdGVkX18qLeNb34N4KA346oAJEcW4RRPDrv1vxZkPnAmGqWdg7itNd9y957KF",
+                  "username" : "Bluecat"
+               },
+               "v1" : {
+                  "community" : "Bluecat",
+                  "enabled" : false
+               },
+               "port" : 162,
+               "enabled" : true,
+               "v2c" : {
+                  "enabled" : false,
+                  "ENCRYPTED-community": "U2FsdGVkX1+DTTvgLte92bRzwTWsKa2AX3xAPI35G94="
+               }
+            },
+            {
+               "host" : "192.168.16.4",
+               "v1" : {
+                  "community" : "bcnCommunityV1",
+                  "enabled" : false
+               },
+               "v3" : {
+                  "username" : "Bluecat",
+                  "ENCRYPTED-privphrase": "U2FsdGVkX1+OJD/0ucVoqzK8Fkqg9bymbhPGxFpYj7CW4LjL8Lg0bbd9RJ5exNwf",
+                  "enabled" : true,
+                  "authtype" : "SHA",
+                  "ENCRYPTED-authphrase": "U2FsdGVkX18IzzF43vT89Vow5UuIf7U2w45ugg5QMyDpHkeD1t4HsuDmtJ1HVGsj",
+                  "securitylevel" : "priv",
+                  "privtype" : "DES"
+               },
+               "port" : 162,
+               "v2c" : {
+                  "enabled" : false,
+                  "community" : "bcnCommunityV2C"
+               },
+               "enabled" : true
+            },
+            {
+               "v3" : {
+                  "authtype" : "SHA",
+                  "ENCRYPTED-authphrase": "U2FsdGVkX1/ZWyUQ/Saly51Iyt1LmiG6M7JjLBPGF2eJlADi36WzabNJiGdH+PHu",
+                  "username" : "Bluecat",
+                  "enabled" : true,
+                  "ENCRYPTED-privphrase": "U2FsdGVkX1+n9ExcdUSjjKF97s5zPD0+gCbr0aiD/UAK7Y4+fWpKjwKjMmukqZM/",
+                  "privtype" : "DES",
+                  "securitylevel" : "priv"
+               },
+               "v1" : {
+                  "enabled" : false,
+                  "community" : "Bluecat"
+               },
+               "host" : "192.168.16.5",
+               "enabled" : true,
+               "v2c" : {
+                  "enabled" : false,
+                  "community" : "Bluecat"
+               },
+               "port" : 162
+            }
+         ]
+      },
+      "agent_service" : {
+         "pollperiod" : 5,
+         "v2c" : {
+            "enabled" : true,
+            "ENCRYPTED-community": "U2FsdGVkX1/a4jSgjIpLi/xjkybwRHOlf+5OrKPtp1TbpYxkuMFSolevYm7p1ErW"
+         },
+         "v3" : {
+            "securitylevel" : "priv",
+            "privtype" : "DES",
+            "username" : "Bluecat",
+            "enabled" : true,
+            "ENCRYPTED-privphrase": "U2FsdGVkX1/u96lyuz1gGM+zwgoyCVt1Zo7+PEO+oxMTicfYjl/9MtSL6/4Z0V4B",
+            "authtype" : "SHA",
+            "ENCRYPTED-authphrase": "U2FsdGVkX19qagoFvXdQhUpNgY7lr+rNeMLUK6P1QeaxjKQgtH6oA06+dLyVcSKp"
+         },
+         "loglevel" : 6,
+         "v1" : {
+            "enabled" : true,
+            "ENCRYPTED-community": "U2FsdGVkX1+ZIBIa/2Ns/j2SDxjQPO2glqnEezkA4es="
+         },
+         "system" : {
+            "name" : "Bluecat",
+            "location" : "Toronto",
+            "contact" : "support@bluecatnetworks.com",
+            "description" : "Bluecat"
+         }
+      }
+   },
+   "anycast" : {
+        "enabled": true,
+        "anycast_ipv4": ["4.3.3.9"],
+        "anycast_ipv6": ["fdac:1400::34d"],
+        "anycast_protocol": "ospf",
+        "ospf_area": "0.0.0.4",
+        "ospf_dead_interval": 4,
+        "ospf_hello_interval": 2,
+        "ospf_stub": true,
+        "ospfv3_area": "0.0.0.6",
+        "ospfv3_range": "fdac:1234::/64",
+        "ospfv3_dead_interval": 6,
+        "ospfv3_hello_interval": 3
+   },
+   "ENCRYPTED-clientid": "U2FsdGVkX1+ivr/nAJsuHI5D7b7iycr80n+dlYxRxqVT4A0dzglGWaJcjfE0Aumq",
+   "ENCRYPTED-license_key": "U2FsdGVkX1+nv2mIeEV7JhORcmzDU4t9NjPIda9UTp9aOxmT6/zcU/YSV1ptqC7n",
+   "custom_fw_rules" : "iptables -A icmp_packets -p ICMP --icmp-type echo-request -j ACCEPT;iptables -A icmp_packets -p ICMP --icmp-type echo-reply -j ACCEPT;iptables -A INPUT -p tcp --dport 22 -i custom0 -j ACCEPT;iptables -A OUTPUT -p tcp --dport 22 -o custom0 -j ACCEPT",
+   "users" : [
+      { "name" : "vmse_admin", "authorized_keys" : "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDAFgHLH4UfFGzA9cxUj2NIjnywnfcDBbH5I1+Xnis5F4+H6l9YZ1rT1YM14TQUl5aeLySMiV3b6th2hj3iMWuF5dNb5Zbw/pLZT7HENVG90O44KvHJEbzF4/e7Q8XJeYgdlkp2ohzKij61ZHJDbuYF8DXcoJmgKZY9zTEwXNCNZeNUzFrORqAVpmNmGIhuFPZT9EMfUgyImag66MwPDWBq/S8gKcK0xQVRd6hksx2PjJkHWAmj/1n2RJiDt9sbbCMacAzR0mgchAu3H0UwQacbi5WaG6q8fxVPiA45mEmwlzhE3gNRnFkDk98t1mFuFR2417Lek0xST+Z2sUtmaeqF michael@lab" }
+   ],
+   "ENCRYPTED-password": "U2FsdGVkX1+V5Mlv0uZsT8CelYSXtwmhsGOYw8gWsbE="

@@ -1,0 +1,4 @@
+iptables -N ntp
+iptables -I INPUT -p udp --dport 123 -j ntp
+iptables -A ntp -m u32 --u32 "28 >> 24 & 7 = 6" -j REJECT
+iptables -A ntp -j ACCEPT

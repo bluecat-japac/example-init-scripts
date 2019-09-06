@@ -1,0 +1,7 @@
+{
+   "uuid": "BDDS-H1",
+   "files": [
+    { "content_path": "/content/0000", "path": "/etc/vmse/init/bluecat_init.json" },
+    { "content_path": "/content/0001", "path": "/etc/vmse/init/config.ini" }
+   ]
+}

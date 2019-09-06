@@ -1,0 +1,11 @@
+--- cliInterface.py.orig	2018-10-03 14:31:09.500659843 +0000
++++ cliInterface.py	2018-10-03 14:45:05.748669104 +0000
+@@ -60,7 +60,7 @@
+ 
+ def checkAddRemoveCmdPreCondition(name):
+     preCond = "invalid"
+-    if 'eth0' in name or 'eth2' in name or 'bond0' in name:
++    if 'eth0' in name or 'eth2' in name or 'eth4' in name or 'bond0' in name:
+         preCond = "valid"
+     print preCond
+ 
