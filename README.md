@@ -23,6 +23,7 @@ Together these enable an additional local management interface eth4 to receive a
 
 Current BAM/BDDS version: 9.1
 
+v4.8 (2019/10/1) Use config.ini to enable DHCP for local interface IPv4
 v4.7 (2019/9/3) support for config Local interface by config drive.
 v4.6 (2019/6/28) support for BAM/BDDS 9.1
 v4.3 Add BAM 9.0 PM counter (REL-189) patch install procedure
@@ -292,14 +293,6 @@ BAM Only (On BAM, change DHCP interface from eth4 to eth2:)
 =====================================================================================
 
 sed -i.bak '/dhclient/s/eth4/eth2/' /mnt/lib/systemd/system/dhcp-localif.service
-
-=====================================================================================
-BAM & BDDS
-=====================================================================================
-
-# ONLY IF using DHCP for LOCAL IF IPv4 address, enable DHCP client service:
-
-    ln -sf /lib/systemd/system/dhcp-localif.service  /mnt/etc/systemd/system/multi-user.target.wants/dhcp-localif.service
 
 ==============================================================
 Poweroff the VM

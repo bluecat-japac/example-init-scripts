@@ -91,6 +91,11 @@ vm_name_prefix=$(cat ${CFGFILE} | grep "^vm_name" | awk -F "_" '{print $(NF - 1)
 vm_seq=$(cat ${CFGFILE} | grep "^vm_name" | awk -F "_" '{print $NF}')
 bam_vm_num=$( getconfig bam_num )
 
+if [ "$( getconfig LOCAL_V4_DHCP )" == "yes" ]
+then
+    systemctl enable --now --no-block dhcp-localif.service
+fi
+
 rm -f $TMP_NETCONF
 
 # BAM has only management interfaces
