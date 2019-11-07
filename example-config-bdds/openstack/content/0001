@@ -1,4 +1,5 @@
 vm_name=vBLUECAT_vBLUECAT_0001_DDS_0001
+ENABLE_DNS_TRAFFIC_STATS_AGENT=no
 # Total number of BAM:
 bam_num=1
 # If number of BAM=1, then the DDS will start from no 2
