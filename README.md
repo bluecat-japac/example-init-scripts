@@ -23,6 +23,7 @@ Together these enable an additional local management interface eth4 to receive a
 
 Current BAM/BDDS version: 9.1
 
+v4.9 (2019/11/7) Use config.ini to enable DNS traffic statistics agent
 v4.8 (2019/10/1) Use config.ini to enable DHCP for local interface IPv4
 v4.7 (2019/9/3) support for config Local interface by config drive.
 v4.6 (2019/6/28) support for BAM/BDDS 9.1
