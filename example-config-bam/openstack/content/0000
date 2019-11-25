@@ -1,6 +1,5 @@
    "implement_log_permissions_workaround" : true,
    "enable-stig-compliance" : false,
-   "hostname" : "vBAM",
    "routes" : [ { "gateway": "172.16.197.101", "network" : "10.0.0.0/8" } ],
    "nameservers" : [ ],
    "snmp" : {

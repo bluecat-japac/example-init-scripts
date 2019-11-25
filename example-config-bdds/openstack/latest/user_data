@@ -1,10 +1,14 @@
-   "implement_log_permissions_workaround" : true,
-   "syslog_servers_fixed_hostname": true,
-   "syslog": "172.16.197.101",
-   "hostname" : "vBDDS",
-   "routes" : [ { "gateway": "172.16.197.101", "network" : "10.0.0.0/8" } ],
-   "nameservers" : [ "8.8.8.8" ],
-   "snmp" : {
+#cloud-config
+write_files:
+- path: /etc/vmse/init/bluecat_init.json
+  permissions: 0644
+  content: |
+    "implement_log_permissions_workaround" : true,
+    "syslog_servers_fixed_hostname": true,
+    "syslog": "172.16.197.101",
+    "routes" : [ { "gateway": "172.16.197.101", "network" : "10.0.0.0/8" } ],
+    "nameservers" : [ "8.8.8.8" ],
+    "snmp" : {
       "trap_service" : {
          "trapservers" : [
             {
@@ -102,8 +106,8 @@
             "description" : "Bluecat"
          }
       }
-   },
-   "anycast" : {
+    },
+    "anycast" : {
         "enabled": true,
         "anycast_ipv4": ["4.3.3.9"],
         "anycast_ipv6": ["fdac:1400::34d"],
@@ -116,11 +120,65 @@
         "ospfv3_range": "fdac:1234::/64",
         "ospfv3_dead_interval": 6,
         "ospfv3_hello_interval": 3
-   },
-   "ENCRYPTED-clientid": "U2FsdGVkX1+ivr/nAJsuHI5D7b7iycr80n+dlYxRxqVT4A0dzglGWaJcjfE0Aumq",
-   "ENCRYPTED-license_key": "U2FsdGVkX1+nv2mIeEV7JhORcmzDU4t9NjPIda9UTp9aOxmT6/zcU/YSV1ptqC7n",
-   "custom_fw_rules" : "iptables -A icmp_packets -p ICMP --icmp-type echo-request -j ACCEPT;iptables -A icmp_packets -p ICMP --icmp-type echo-reply -j ACCEPT;iptables -A INPUT -p tcp --dport 22 -i custom0 -j ACCEPT;iptables -A OUTPUT -p tcp --dport 22 -o custom0 -j ACCEPT",
-   "users" : [
+    },
+    "ENCRYPTED-clientid": "U2FsdGVkX1+ivr/nAJsuHI5D7b7iycr80n+dlYxRxqVT4A0dzglGWaJcjfE0Aumq",
+    "ENCRYPTED-license_key": "U2FsdGVkX1+nv2mIeEV7JhORcmzDU4t9NjPIda9UTp9aOxmT6/zcU/YSV1ptqC7n",
+    "custom_fw_rules" : "iptables -A icmp_packets -p ICMP --icmp-type echo-request -j ACCEPT;iptables -A icmp_packets -p ICMP --icmp-type echo-reply -j ACCEPT;iptables -A INPUT -p tcp --dport 22 -i custom0 -j ACCEPT;iptables -A OUTPUT -p tcp --dport 22 -o custom0 -j ACCEPT",
+    "users" : [
       { "name" : "vmse_admin", "authorized_keys" : "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDAFgHLH4UfFGzA9cxUj2NIjnywnfcDBbH5I1+Xnis5F4+H6l9YZ1rT1YM14TQUl5aeLySMiV3b6th2hj3iMWuF5dNb5Zbw/pLZT7HENVG90O44KvHJEbzF4/e7Q8XJeYgdlkp2ohzKij61ZHJDbuYF8DXcoJmgKZY9zTEwXNCNZeNUzFrORqAVpmNmGIhuFPZT9EMfUgyImag66MwPDWBq/S8gKcK0xQVRd6hksx2PjJkHWAmj/1n2RJiDt9sbbCMacAzR0mgchAu3H0UwQacbi5WaG6q8fxVPiA45mEmwlzhE3gNRnFkDk98t1mFuFR2417Lek0xST+Z2sUtmaeqF michael@lab" }
-   ],
-   "ENCRYPTED-password": "U2FsdGVkX1+V5Mlv0uZsT8CelYSXtwmhsGOYw8gWsbE="
+    ],
+    "ENCRYPTED-password": "U2FsdGVkX1+V5Mlv0uZsT8CelYSXtwmhsGOYw8gWsbE="
+- path: /etc/vmse/init/config.ini
+  permissions: 0644
+  content: |
+    vm_name=vBLUECAT_vBLUECAT_0001_DDS_0001
+    ENABLE_DNS_TRAFFIC_STATS_AGENT=no
+    # Total number of BAM:
+    bam_num=1
+    # If number of BAM=1, then the DDS will start from no 2
+    LOCAL_V4_DHCP=yes
+    LOCAL_V6_0001=fdac:1400:4::0010
+    LOCAL_V6_0002=fdac:1400:4::0011
+    LOCAL_V6_0003=fdac:1400:4::0012
+    LOCAL_V6_0004=fdac:1400:4::0013
+    LOCAL_V6_0005=fdac:1400:4::0014
+    LOCAL_V6_0006=fdac:1400:4::0015
+    LOCAL_V6_0007=fdac:1400:4::0016
+    LOCAL_V6_PREFIX=64
+    OM_0001=172.16.197.4
+    OM_0002=172.16.197.5
+    OM_0003=172.16.197.6
+    OM_0004=172.16.197.7
+    OM_0005=172.16.197.8
+    OM_0006=172.16.197.9
+    OM_0007=172.16.197.10
+    OM_NET_MASK=24
+    OM_GATEWAY=172.16.197.1
+    OM_V6_0001=fdac:1400::0017
+    OM_V6_0002=fdac:1400::0018
+    OM_V6_0003=fdac:1400::0019
+    OM_V6_0004=fdac:1400::001A
+    OM_V6_0005=fdac:1400::001B
+    OM_V6_0006=fdac:1400::001C
+    OM_V6_0007=fdac:1400::001D
+    OM_V6_GATEWAY=fdac:1400::001E
+    OM_V6_PREFIX=64
+    # Only DDS has a service interface; numbering starts from 1
+    SERVER_0001=172.16.79.5
+    SERVER_0002=172.16.79.6
+    SERVER_0003=172.16.79.7
+    SERVER_0004=172.16.79.8
+    SERVER_0005=172.16.79.9
+    SERVER_0006=172.16.79.10
+    SERVER_0007=172.16.79.11
+    SERVER_NET_MASK=24
+    SERVER_GATEWAY=172.16.79.1
+    SERVER_V6_0001=fdac:1400:1::001F
+    SERVER_V6_0002=fdac:1400:1::0020
+    SERVER_V6_0003=fdac:1400:1::0021
+    SERVER_V6_0004=fdac:1400:1::0022
+    SERVER_V6_0005=fdac:1400:1::0023
+    SERVER_V6_0006=fdac:1400:1::0024
+    SERVER_V6_0007=fdac:1400:1::0025
+    SERVER_V6_GATEWAY=fdac:1400:1::0026
+    SERVER_V6_PREFIX=64
