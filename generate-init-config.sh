@@ -87,8 +87,9 @@ EOF
 #         vm_name_prefix ^^^
 # vBLUECAT_vBLUECAT_0001_DDS_0001
 #                            ^^^^ vm_seq
-vm_name_prefix=$(cat ${CFGFILE} | grep "^vm_name" | awk -F "_" '{print $(NF - 1)}')
-vm_seq=$(cat ${CFGFILE} | grep "^vm_name" | awk -F "_" '{print $NF}')
+vm_name=$( getconfig vm_name )
+vm_name_prefix=$( getconfig vm_name | awk -F "_" '{print $(NF - 1)}')
+vm_seq=$( getconfig vm_name | awk -F "_" '{print $NF}')
 bam_vm_num=$( getconfig bam_num )
 
 if [ "$( getconfig LOCAL_V4_DHCP )" == "yes" ]
@@ -117,6 +118,7 @@ then
 
 cat <<EOF > $TMP_NETCONF
 {
+   "hostname" : "${vm_name}",
    "interfaces" : [
       {
          "name" : "eth0",
@@ -165,6 +167,7 @@ then
  
 cat <<EOF > $TMP_NETCONF
 {
+   "hostname" : "${vm_name}",
    "interfaces" : [
       {
          "name" : "eth0",
@@ -250,6 +253,10 @@ fi
 rm -f $TMP_NETCONF
 
 echo '{' > $INIT_CONFIG
+# Set the hostname value in the bluecat_init.json file
+# (if this is not set explicitly, the hostname in meta_data.json will be used.)
+echo "\"hostname\" : \"${vm_name}\"," >> $INIT_CONFIG
+# Enable dedicated managed in the bluecat_init.json file
 if [ "${vm_name_prefix}" = "DDS" ]
 then
     echo '"enable-dedicated-management" : true,' >> $INIT_CONFIG
