@@ -2,6 +2,7 @@
 # Copyright BlueCat Networks 2019. All rights reserved.
 
 CFGFILE=/etc/vmse/init/config.ini
+BUILTIN_CFG=/etc/vmse/init/bluecat_init.builtin
 STANDARD_CFG=/etc/vmse/init/bluecat_init.json
 INIT_CONFIG=/etc/bcn/init-config.json
 TMP_NETCONF=/tmp/init-netconf.json
@@ -263,11 +264,18 @@ then
 fi
 # **** Add your passphrase here ****
 PASSPHRASE="### YOUR PASSPHRASE HERE ###"
-perl -e '
+(
+    # concatenate configuration from multiple sources
+    if [ -s "$BUILTIN_CFG" ]
+    then
+        cat $BUILTIN_CFG
+    fi
+    cat $STANDARD_CFG
+) | perl -e '
 sub decrypt { $t=`echo "@_[0]" | openssl enc -d -aes256 -md md5 -a -pass "pass:'$PASSPHRASE'"` ; $t =~ s/\s+$//; return $t }
 while (<>) { s/"ENCRYPTED-(.*?)" *: *"(.*?)"/"\"$1\": \"" . decrypt($2) . "\""/e; print; }
-' < $STANDARD_CFG >> $INIT_CONFIG
+' >> $INIT_CONFIG
 echo '}' >> $INIT_CONFIG
-rm -f $STANDARD_CFG
+rm -f $BUILTIN_CFG $STANDARD_CFG
 
 # The INIT_CONFIG file will be processed, then deleted, by the post_install script
