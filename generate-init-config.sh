@@ -98,7 +98,7 @@ fi
 
 if [ "$( getconfig ENABLE_DNS_TRAFFIC_STATS_AGENT )" == "yes" ]
 then
-    systemctl enable --now --no-block packetbeat.service
+    systemctl enable packetbeat.service
     systemctl enable dns_stat_agent.service
 fi
 
