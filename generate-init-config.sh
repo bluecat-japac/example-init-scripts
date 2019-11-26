@@ -88,9 +88,11 @@ EOF
 #         vm_name_prefix ^^^
 # vBLUECAT_vBLUECAT_0001_DDS_0001
 #                            ^^^^ vm_seq
+# The separator can be '-' or '_'
+
 vm_name=$( getconfig vm_name )
-vm_name_prefix=$( getconfig vm_name | awk -F "_" '{print $(NF - 1)}')
-vm_seq=$( getconfig vm_name | awk -F "_" '{print $NF}')
+vm_name_prefix=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $(NF - 1)}')
+vm_seq=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $NF}')
 bam_vm_num=$( getconfig bam_num )
 
 if [ "$( getconfig LOCAL_V4_DHCP )" == "yes" ]
