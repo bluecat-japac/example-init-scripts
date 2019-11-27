@@ -55,7 +55,7 @@ input_template = {
    "hostname" : ".*",
    "interfaces" : [
       {
-         "name" : "eth[0-4]",
+         "name" : "(eth[0-4]|eth0:[0-9]+)",
          "v4addresses" : [
             {
                "address" : "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$",
@@ -103,8 +103,9 @@ hostname = 'new'
 if 'hostname' in initdata:
     hostname = initdata['hostname']
 
-eth0_data = next(x for x in initdata['interfaces'] if x['name'] == 'eth0')
-# First IPv4 address must be the primary IPv4 address
+# Find the primary IP address. This may be a VLAN interface
+# We make the first IPv4 address on eth0 the primary address
+eth0_data = next(x for x in initdata['interfaces'] if x['name'].split('.')[0] == 'eth0')
 eth0_ip4_address = eth0_data['v4addresses'][0]['address']
 
 # update database configuration on BAM to reflect IP address change
@@ -166,33 +167,68 @@ writePsmDatabase('/etc/bcn/routes.db', 'Routes', routes)
 
 networks = readPsmDatabase('/etc/bcn/networks.db','Networks')
 
+interfaces = {}
+for psmif in networks['interfaces']:
+    ifname = psmif['name']
+    interfaces[ifname] = psmif
+
+# Remove the default address from eth0
+# This is relevant only when the primary address is on a VLAN interface
+interfaces['eth0']['v4addresses'] = []
+
+primary_address_seen = False
+
 for ifdata in initdata['interfaces']:
-    ifname = ifdata['name']
+    fullname = ifdata['name']
+
+    if '.' in fullname:
+        vlanid = int(fullname.split('.')[1])
+        ifname = fullname.split('.')[0]
+    else:
+        vlanid = None
+        ifname = fullname
+
     for addr in ifdata['v4addresses'] + ifdata['v6addresses']:
         assert set(addr.keys()) == set(['address','cidr'])
 
     if ifname == 'eth0' and is_bdds:
         # Require a primary IPv4 address on the service interface
         assert len(ifdata['v4addresses']) >= 1
-        # Make first address in each list the primary address
-        ifdata['v4addresses'][0]['flags'] = 1 # primary service interface flag
-        if len(ifdata['v6addresses']) >= 1:
-            ifdata['v6addresses'][0]['flags'] = 1 # primary service interface flag
+        if not primary_address_seen:
+            # Make first address in each list the primary address
+            ifdata['v4addresses'][0]['flags'] = 1 # primary service interface flag
+            if len(ifdata['v6addresses']) >= 1:
+                ifdata['v6addresses'][0]['flags'] = 1 # primary service interface flag
+            primary_address_seen = True
     if ifname == 'eth0' and is_bam:
         # Allow only one IPv4 address on the BAM interface
         assert len(ifdata['v4addresses']) == 1
         ifdata['v4addresses'][0]['flags'] = 1 # primary interface flag on BAM
+        primary_address_seen = True
     if ifname == 'eth2' and is_bdds:
         # Allow only one IPv4 address on the BDDS management interface
         # This is flagged as the management address, even though dedicated management is not yet enabled
         assert len(ifdata['v4addresses']) == 1
         ifdata['v4addresses'][0]['flags'] = 4 # management interface flag
 
-    for psm_if in networks['interfaces']:
-        if psm_if['name'] == ifname:
-            psm_if['active'] = 1
-            psm_if['v4addresses'] = ifdata['v4addresses']
-            psm_if['v6addresses'] = ifdata['v6addresses']
+    if vlanid: # Add new VLAN interface
+        assert(ifname == 'eth0')
+        interfaces[fullname] = {
+            'name' : fullname,
+            'description' : ifname + ' VLAN ' + str(vlanid),
+            'parents' : [ ifname ],
+            'type' : 'vlan',
+            'vlanid' : vlanid
+        }
+
+    psm_if = interfaces[fullname]
+    psm_if['active'] = 1
+    psm_if['v4addresses'] = ifdata['v4addresses']
+    psm_if['v6addresses'] = ifdata['v6addresses']
+
+assert(primary_address_seen)
+
+networks['interfaces'] = [ interfaces[ifname] for ifname in sorted(interfaces.keys()) ]
 
 writePsmDatabase('/etc/bcn/networks.db', 'Networks', networks)
 

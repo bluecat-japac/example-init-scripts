@@ -179,13 +179,21 @@ then
     # Use perl printf %0<n>d to retain correct number of leading zeros
     dds_seq_suffix=$(perl -e "printf '%0'.length('${vm_seq}').'d', (${vm_seq} + ${bam_vm_num})")
     echo "bam_vm_num = ${bam_vm_num}, dds_seq_suffix = ${dds_seq_suffix}"
+
+    SERVER_VLAN_ID=$( getconfig SERVER_VLAN_ID )
+    if [ "$SERVER_VLAN_ID" ]
+    then
+        eth0_name="eth0.$SERVER_VLAN_ID"
+    else
+        eth0_name="eth0"
+    fi
  
 cat <<EOF > $TMP_NETCONF
 {
    "hostname" : "${vm_name}",
    "interfaces" : [
       {
-         "name" : "eth0",
+         "name" : "${eth0_name}",
          "v4addresses" : [
             {
                "address" : "$( getconfig SERVER_${vm_seq} )",

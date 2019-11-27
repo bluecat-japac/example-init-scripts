@@ -23,6 +23,8 @@ Together these enable an additional local management interface eth4 to receive a
 
 Current BAM/BDDS version: 9.1
 
+v4.11 (2019/11/27) Support 802.1Q VLAN tagging on eth0
+    Allow dash '-' as separator in vm_name
 v4.10 (2019/11/25) Use vm_name from config.ini as hostname
     Support built-in configuration file and inject files in user_data
 v4.9 (2019/11/7) Use config.ini to enable DNS traffic statistics agent
