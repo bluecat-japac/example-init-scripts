@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# version 4.12 Michael 6 December 2019
+#     Add support for IPv6 syslog destinations
+#
 # version 4.6 Michael 28 June 2019
 #     Disable SNMPv3 secrets workaround, because this has been fixed in 9.1
 #
@@ -288,9 +291,17 @@ if 'syslog' in meta:
 
 if syslog_servers:
     for server in syslog_servers:
-        sCmd = cCliShellCommand('/usr/local/bluecat/PsmClient syslog add ddriver=udp' +
-                                ' id=dest_udp_' + server + ' host=' + server + ' port=514')
-        sCmd.exe('Configure syslog server ' + server)
+        server = server.lower() # convert IPv6 hexadecimal to lower-case
+        if re.match(r'^[0-9.]*$', server): # IPv4 address
+            sCmd = cCliShellCommand('/usr/local/bluecat/PsmClient syslog add ddriver=udp' +
+                                    ' id=dest_udp_' + server + ' host=' + server + ' port=514')
+            sCmd.exe('Configure syslog server ' + server)
+        elif re.match(r'^[0-9a-f:]*$', server): # IPv6 address
+            sCmd = cCliShellCommand('/usr/local/bluecat/PsmClient syslog add ddriver=udp6' +
+                                    ' id=dest_udp6_' + server.replace(':','_') + ' host=' + server + ' port=514')
+            sCmd.exe('Configure syslog server ' + server)
+        else:
+            print 'ERROR: syslog server is not an IP address: %s' % server
 
 psm_overrides = set()
 
