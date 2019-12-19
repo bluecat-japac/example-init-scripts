@@ -23,6 +23,8 @@ Together these enable an additional local management interface eth4 to receive a
 
 Current BAM/BDDS version: 9.1
 
+v4.13 (2019/12/19) All configuration now provided via config.ini and builtin.ini
+    Some static configuration is hard-coded in the generate-init-config.sh script
 v4.12 (2019/12/6) Support IPv6 syslog destinations
 v4.11 (2019/11/27) Support 802.1Q VLAN tagging on eth0
     Allow dash '-' as separator in vm_name
@@ -192,6 +194,7 @@ BAM & BDDS: copy   generate-init-config.sh
 
 	cp /z/generate-init-config.sh  /mnt/usr/local/bluecat/cloud/
 	chmod 755  /mnt/usr/local/bluecat/cloud/generate-init-config.sh
+        echo "### MY PASSPHRASE HERE ###" > /mnt/etc/bcn/init.key
 
 =====================================================
 BAM & BDDS: copy   92_openstack.cfg

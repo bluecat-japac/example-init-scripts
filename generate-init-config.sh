@@ -14,29 +14,31 @@
 # limitations under the License.
 
 CFGFILE=/etc/vmse/init/config.ini
-BUILTIN_CFG=/etc/vmse/init/bluecat_init.builtin
-STANDARD_CFG=/etc/vmse/init/bluecat_init.json
+CFGFILE_BUILTIN=/etc/vmse/init/builtin.ini
 INIT_CONFIG=/etc/bcn/init-config.json
 TMP_NETCONF=/tmp/init-netconf.json
+INIT_KEY=/etc/bcn/init.key
+
+function decrypt {
+    echo "$1" | openssl enc -d -aes256 -md md5 -a -pass "pass:$(cat $INIT_KEY)"
+}
+
+
+# Set TRIAL_RUN=yes to generate configuration files, but not update the PSM database
+#TRIAL_RUN=yes
 
 # This script is only needed on the first boot
-# After the initial configuration has been created, the STANDARD_CFG file is deleted below
+# After the initial configuration has been created, the CFGFILE file is deleted below
 # This prevents any action on future reboots
-if [ ! -s $STANDARD_CFG ]
+if [ ! -s $CFGFILE ]
 then
     exit 0
 fi
 
-echo Generating initial configuration from $CFGFILE and $STANDARD_CFG
-
-if [ ! -s $CFGFILE ]
-then
-    echo $CFGFILE not found
-    exit 1
-fi
+echo Generating initial configuration from $CFGFILE
 
 function getconfig {
-    cat ${CFGFILE} | grep "^"$1 | awk -F= '{print $2}'
+    cat ${CFGFILE_BUILTIN} ${CFGFILE} | grep "^"$1 | tail -1 | cut -d= -f2-
 }
 
 function local_if_config {
@@ -107,12 +109,12 @@ vm_name_prefix=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $(NF - 1)}
 vm_seq=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $NF}')
 bam_vm_num=$( getconfig bam_num )
 
-if [ "$( getconfig LOCAL_V4_DHCP )" == "yes" ]
+if [ "$( getconfig LOCAL_V4_DHCP )" == "yes" -a ! "$TRIAL_RUN" == "yes" ]
 then
     systemctl enable --now --no-block dhcp-localif.service
 fi
 
-if [ "$( getconfig ENABLE_DNS_TRAFFIC_STATS_AGENT )" == "yes" ]
+if [ "$( getconfig ENABLE_DNS_TRAFFIC_STATS_AGENT )" == "yes" -a ! "$TRIAL_RUN" == "yes" ]
 then
     systemctl enable packetbeat.service
     systemctl enable dns_stat_agent.service
@@ -267,37 +269,192 @@ else
     exit 1
 fi
 
-# Update network settings
-python /usr/local/bluecat/cloud/init-bluecat-netconf.py < $TMP_NETCONF
-if [ $? -gt 0 ]; then
-    echo -e "[`date +%F_%T.%N`]: failed to initialize PSM network configuration"
-    exit 1
-fi
-rm -f $TMP_NETCONF
+if [ ! "$TRIAL_RUN" == "yes" ]; then
 
-echo '{' > $INIT_CONFIG
+    # Update network settings
+    python /usr/local/bluecat/cloud/init-bluecat-netconf.py < $TMP_NETCONF
+    if [ $? -gt 0 ]; then
+        echo -e "[`date +%F_%T.%N`]: failed to initialize PSM network configuration"
+        exit 1
+    fi
+    rm -f $TMP_NETCONF
+
+fi
+
 # Set the hostname value in the bluecat_init.json file
 # (if this is not set explicitly, the hostname in meta_data.json will be used.)
-echo "\"hostname\" : \"${vm_name}\"," >> $INIT_CONFIG
+cat <<EOF > $INIT_CONFIG
+{
+    "hostname" : "${vm_name}",
+EOF
 # Enable dedicated managed in the bluecat_init.json file
 if [ "${vm_name_prefix}" = "DDS" ]
 then
-    echo '"enable-dedicated-management" : true,' >> $INIT_CONFIG
+    cat <<EOF >> $INIT_CONFIG
+    "enable-dedicated-management" : true,
+EOF
 fi
-# **** Add your passphrase here ****
-PASSPHRASE="### YOUR PASSPHRASE HERE ###"
-(
-    # concatenate configuration from multiple sources
-    if [ -s "$BUILTIN_CFG" ]
-    then
-        cat $BUILTIN_CFG
+
+if [ "$( getconfig syslog_host1 )" ]; then
+cat <<EOF >> $INIT_CONFIG
+    "syslog": "$( getconfig syslog_host1 )",
+EOF
+fi
+if [ "$( getconfig timezone )" ]; then
+cat <<EOF >> $INIT_CONFIG
+    "timezone" : "$( getconfig timezone )",
+EOF
+fi
+if [ "$( getconfig route1_network )" ]; then
+cat <<EOF >> $INIT_CONFIG
+    "routes" : [ { "gateway": "$( getconfig route1_gateway )", "network" : "$( getconfig route1_network )" } ],
+EOF
+fi
+
+fw_rules="iptables -A icmp_packets -p ICMP --icmp-type echo-request -j ACCEPT"
+fw_rules="${fw_rules};iptables -A icmp_packets -p ICMP --icmp-type echo-request -j ACCEPT"
+if [ "$( getconfig firewall_localif_v4net_1 )" ]; then
+    fw_rules="${fw_rules};iptables -A INPUT -s $( getconfig firewall_localif_v4net_1 ) -i eth4 -j ACCEPT"
+fi
+if [ "$( getconfig firewall_localif_v6net_1 )" ]; then
+    fw_rules="${fw_rules};ip6tables -A INPUT -s $( getconfig firewall_localif_v6net_1 ) -i eth4 -j ACCEPT"
+fi
+
+cat <<EOF >> $INIT_CONFIG
+    "custom_fw_rules" : "${fw_rules}",
+EOF
+
+if [ "$( getconfig stig_compliance )" == "yes" ]; then
+cat <<EOF >> $INIT_CONFIG
+    "enable-stig-compliance": true,
+EOF
+fi
+
+cat <<EOF >> $INIT_CONFIG
+    "implement_log_permissions_workaround" : true,
+    "syslog_servers_fixed_hostname": true,
+    "nameservers" : [ "$( getconfig nameserver1 )" ],
+    "snmp" : {
+      "trap_service" : {
+         "trapservers" : [
+EOF
+snmp_trap_hosts="$( getconfig snmp_trap_hosts | tr ',' ' ' )"
+not_first=
+for trap_host in ${snmp_trap_hosts}; do
+    if [ "$not_first" ]; then
+        echo "," >> $INIT_CONFIG
     fi
-    cat $STANDARD_CFG
-) | perl -e '
-sub decrypt { $t=`echo "@_[0]" | openssl enc -d -aes256 -md md5 -a -pass "pass:'$PASSPHRASE'"` ; $t =~ s/\s+$//; return $t }
-while (<>) { s/"ENCRYPTED-(.*?)" *: *"(.*?)"/"\"$1\": \"" . decrypt($2) . "\""/e; print; }
-' >> $INIT_CONFIG
-echo '}' >> $INIT_CONFIG
-rm -f $BUILTIN_CFG $STANDARD_CFG
+    not_first=yes
+    cat <<EOF >> $INIT_CONFIG
+            {
+               "host" : "${trap_host}",
+               "v1" : { "enabled" : false, "community" : "bcnCommunityV1"  },
+               "v2c" : { "enabled" : false, "community" : "bcnCommunityV2C" },
+               "v3" : {
+                  "enabled" : true,
+                  "username" : "Bluecat",
+                  "securitylevel" : "priv",
+                  "authtype" : "$( getconfig snmp_authtype )",
+                  "authphrase": "$( decrypt "$( getconfig x_snmp_authphrase )" )",
+                  "privtype" : "$( getconfig snmp_privtype )",
+                  "privphrase": "$( decrypt "$( getconfig x_snmp_privphrase )" )"
+               },
+               "port" : 162,
+               "enabled" : true
+            }
+EOF
+    done
+cat <<EOF >> $INIT_CONFIG
+         ]
+      },
+      "agent_service" : {
+         "pollperiod" : 5,
+         "v1" : { "enabled" : false, "community" : "bcnCommunityV1"  },
+         "v2c" : { "enabled" : false, "community" : "bcnCommunityV2C" },
+         "v3" : {
+                  "enabled" : true,
+                  "username" : "Bluecat",
+                  "securitylevel" : "priv",
+                  "authtype" : "$( getconfig snmp_authtype )",
+                  "authphrase": "$( decrypt "$( getconfig x_snmp_authphrase )" )",
+                  "privtype" : "$( getconfig snmp_privtype )",
+                  "privphrase": "$( decrypt "$( getconfig x_snmp_privphrase )" )"
+         },
+         "loglevel" : 6,
+         "system" : {
+            "name" : "Bluecat",
+            "location" : "Toronto",
+            "contact" : "support@bluecatnetworks.com",
+            "description" : "Bluecat"
+         }
+      }
+    },
+    "clientid": "$( decrypt "U2FsdGVkX1+ivr/nAJsuHI5D7b7iycr80n+dlYxRxqVT4A0dzglGWaJcjfE0Aumq" )",
+    "license_key": "$( decrypt "U2FsdGVkX1+nv2mIeEV7JhORcmzDU4t9NjPIda9UTp9aOxmT6/zcU/YSV1ptqC7n" )",
+    "users" : [
+      {
+            "name" : "vmse_admin",
+            "authorized_keys" : "$( getconfig vmse_admin_ssh_key )"
+      },
+      {
+            "name" : "bluecat",
+            "passwd" : "$( decrypt "$( getconfig x_bluecat_password )" )"
+      }
+    ],
+    "password": "$( decrypt "$( getconfig x_password )" )"
+}
+EOF
+
+if [ ! "$TRIAL_RUN" == "yes" ]; then
+    rm -f $INIT_KEY
+fi
 
 # The INIT_CONFIG file will be processed, then deleted, by the post_install script
+
+# Configure syslog_monitoring, if installed:
+
+monitored_dns_servers="$( getconfig monitored_dns_servers | tr ',' ' ' )"
+monitored_domain="$( getconfig monitored_domain )"
+syslog_mon_trap_hosts="$( getconfig syslog_mon_trap_hosts | tr ',' ' ' )"
+
+SYSLOG_MON_PATH=/opt/syslog_monitoring/Config
+if [ -d $SYSLOG_MON_PATH -a -f $SYSLOG_MON_PATH/config.ini ]; then
+    sed -i.bak "s/^vm_host_name *=.*/vm_host_name = ${vm_name}/" $SYSLOG_MON_PATH/config.ini
+    if [ "${monitored_domain}" ]; then
+        sed -i.bak "s/^domain *=.*/domain = ${monitored_domain}/" $SYSLOG_MON_PATH/config.ini
+    fi
+    true > $SYSLOG_MON_PATH/resolv.conf
+    if [ "${monitored_dns_servers}" ]; then
+        for server in ${monitored_dns_servers} ; do
+            echo "nameserver $server" >> $SYSLOG_MON_PATH/resolv.conf
+        done
+    fi
+    (
+        echo "["
+        not_first=
+        for trap_host in ${syslog_mon_trap_hosts}; do
+            if [ "$not_first" ]; then
+                echo ","
+            fi
+            not_first=yes
+            # authKey and privKey must be encoded as described in the syslog-monitoring README
+            cat <<EOF
+    {
+        "transportTarget": "${trap_host}",
+        "userName": "usm-user",
+        "authKey": "bXlwYXNzd29yZA==",
+        "privKey": "bXlwYXNzd29yZA==",
+        "authProtocol": "SHA",
+        "privProtocol": "AES",
+        "port": 162
+    }
+EOF
+        done
+        echo "]"
+    ) > $SYSLOG_MON_PATH/snmp_config.json
+fi
+
+if [ ! "$TRIAL_RUN" == "yes" ]; then
+    # Remove config.ini to stop this script running again
+    rm -f $CFGFILE
+fi

@@ -4,8 +4,7 @@ write_files:
 - path: /etc/vmse/init/config.ini
   permissions: 0644
   content: |
-    vm_name=vBLUECAT_vBLUECAT_0001_DDS_0001
-    ENABLE_DNS_TRAFFIC_STATS_AGENT=no
+    vm_name=vBLUECAT_vBLUECAT_0001_BAM_0001
     # Total number of BAM:
     bam_num=1
     # If number of BAM=1, then the DDS will start from no 2
@@ -63,9 +62,6 @@ write_files:
     snmp_trap_hosts=fdac:1400::3,fdac:1400::4,fdac:1400::5
     firewall_localif_v4net_1=192.0.2.0/28
     firewall_localif_v6net_1=fdac:1400::0/120
-    monitored_dns_servers=8.8.8.8,8.8.4.4
-    monitored_domain=www.example.com
-    syslog_mon_trap_hosts=fdac:1400::13,fdac:1400::14,fdac:1400::15
 - path: /etc/vmse/init/builtin.ini
   permissions: 0644
   content: |

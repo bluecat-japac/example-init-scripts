@@ -284,6 +284,11 @@ systemEnv = cCliSystemEnv()
 if systemEnv.isBdds() and os.path.isfile(fw_rules_filename):
     sCmd = cCliShellCommand('/usr/local/bluecat/custom_fw_rules --import-rules ' + fw_rules_filename)
     sCmd.exe('Import custom firewall rules')
+    # now the firewall rules have imported in to the PSM db, the import file can be removed
+    try:
+        os.remove(fw_rules_filename)
+    except Exception as e:
+        print 'Failed to remove fw rules file - %s' % e
 
 syslog_servers = None
 if 'syslog' in meta:
