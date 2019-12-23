@@ -2,6 +2,7 @@
 
 systemctl stop psmd
 rm -rf /root/.cache /var/lib/cloud /root/.ssh
+rm -f /opt/server/proteus/etc/keystore /data/server/conf/server.cert
 rm -f /etc/ssh/ssh_host_*key* /etc/bcn/{*.db,*.xml,*.config} /etc/bcn/.PsmInitiated  /etc/profile.d/productinfo.sh  /etc/network/interfaces.d/50-cloud-init.cfg  /etc/*{.bak,.bck,-}
 true> /etc/resolv.conf
 true> /etc/machine-id
