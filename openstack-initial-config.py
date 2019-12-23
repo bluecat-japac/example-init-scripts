@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# version 4.14 Michael 23 December 2019
+#     Add support for syslog_servers_fixed_hostname with IPv6 and syslog_mon
+#
 # version 4.12 Michael 6 December 2019
 #     Add support for IPv6 syslog destinations
 #
@@ -115,6 +118,7 @@ bluecat_metadata_filename = '/etc/bcn/init-config.json'
 bam_init_database_filename = '/etc/bcn/init-database.bak'
 fw_rules_filename = '/etc/bcn/custom_fw_rules'
 resolv_conf_filename = '/etc/resolv.conf'
+syslog_filters_filename = '/usr/share/syslog-ng/include/scl/syslog_mon/filters.conf'
 
 # Load BlueCat meta_data from a separate inject file
 meta = {}
@@ -332,12 +336,28 @@ if hostname and 'syslog_servers_fixed_hostname' in meta and meta['syslog_servers
                         newfile.write('# BlueCat rewrite rule to replace hostname, added by init script\n')
                         newfile.write('rewrite r_replace_hostname { set ("%s", value("HOST")); };\n\n' % hostname)
                         rewrite_rule_defined = True
-                    m = re.match(r'\s*destination\(dest_udp_(.*)\);', line)
+                    # standard destination name is dest_udp_<ip4> or dest_udp6_<ip6>
+                    m = re.match(r'\s*destination\(dest_(udp|tcp)(.*)\);', line)
                     if m:
                         newfile.write("\trewrite(r_replace_hostname);\n")
                     newfile.write(line)
         shutil.copy('/etc/syslog-ng/syslog-ng.conf','/etc/syslog-ng/syslog-ng.conf.bak')
         os.rename('/etc/syslog-ng/syslog-ng.conf.new','/etc/syslog-ng/syslog-ng.conf')
+
+        # Update also syslog_mon pre-defined log rules
+        if os.path.isfile(syslog_filters_filename):
+            with open(syslog_filters_filename,'r') as oldfile:
+                with open(syslog_filters_filename + '.new','w') as newfile:
+                    newfile.write('# BlueCat rewrite rule to replace hostname, added by init script\n')
+                    newfile.write('rewrite r_rewrite_hostname { set ("%s", value("HOST")); };\n\n' % hostname)
+                    for line in oldfile:
+                        newfile.write(line)
+                        m = re.match(r'\s*source\(local\);', line)
+                        if m:
+                            newfile.write("\trewrite(r_rewrite_hostname);\n")
+        shutil.copy(syslog_filters_filename, syslog_filters_filename + '.bak')
+        os.rename(syslog_filters_filename + '.new', syslog_filters_filename)
+
         subprocess.call(['service','syslog','reload'])
     except Exception as e:
         print "Failed to update syslog configuration: %s" % e

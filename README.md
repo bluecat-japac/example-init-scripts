@@ -23,6 +23,7 @@ Together these enable an additional local management interface eth4 to receive a
 
 Current BAM/BDDS version: 9.1
 
+v4.14 (2019/12/23) Add fixed-hostname support for IPv6 and syslog-mon
 v4.13 (2019/12/19) All configuration now provided via config.ini and builtin.ini
     Some static configuration is hard-coded in the generate-init-config.sh script
 v4.12 (2019/12/6) Support IPv6 syslog destinations
