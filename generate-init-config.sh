@@ -15,6 +15,8 @@
 
 CFGFILE=/etc/vmse/init/config.ini
 CFGFILE_BUILTIN=/etc/vmse/init/builtin.ini
+BUILTIN_JSON_CFG=/etc/vmse/init/bluecat_init.builtin
+STANDARD_JSON_CFG=/etc/vmse/init/bluecat_init.json
 INIT_CONFIG=/etc/bcn/init-config.json
 TMP_NETCONF=/tmp/init-netconf.json
 INIT_KEY=/etc/bcn/init.key
@@ -22,7 +24,6 @@ INIT_KEY=/etc/bcn/init.key
 function decrypt {
     echo "$1" | openssl enc -d -aes256 -md md5 -a -pass "pass:$(cat $INIT_KEY)"
 }
-
 
 # Set TRIAL_RUN=yes to generate configuration files, but not update the PSM database
 #TRIAL_RUN=yes
@@ -311,6 +312,12 @@ cat <<EOF >> $INIT_CONFIG
 EOF
 fi
 
+if [ "$( getconfig stig_compliance )" == "yes" ]; then
+cat <<EOF >> $INIT_CONFIG
+    "enable-stig-compliance": true,
+EOF
+fi
+
 fw_rules="iptables -A icmp_packets -p ICMP --icmp-type echo-request -j ACCEPT"
 fw_rules="${fw_rules};iptables -A icmp_packets -p ICMP --icmp-type echo-request -j ACCEPT"
 if [ "$( getconfig firewall_localif_v4net_1 )" ]; then
@@ -320,20 +327,14 @@ if [ "$( getconfig firewall_localif_v6net_1 )" ]; then
     fw_rules="${fw_rules};ip6tables -A INPUT -s $( getconfig firewall_localif_v6net_1 ) -i eth4 -j ACCEPT"
 fi
 
+if [ "$( getconfig nameserver1 )" ]; then
 cat <<EOF >> $INIT_CONFIG
-    "custom_fw_rules" : "${fw_rules}",
-EOF
-
-if [ "$( getconfig stig_compliance )" == "yes" ]; then
-cat <<EOF >> $INIT_CONFIG
-    "enable-stig-compliance": true,
+    "nameservers" : [ "$( getconfig nameserver1 )" ],
 EOF
 fi
 
+if [ "$( getconfig snmp_trap_hosts )" ]; then
 cat <<EOF >> $INIT_CONFIG
-    "implement_log_permissions_workaround" : true,
-    "syslog_servers_fixed_hostname": true,
-    "nameservers" : [ "$( getconfig nameserver1 )" ],
     "snmp" : {
       "trap_service" : {
          "trapservers" : [
@@ -389,6 +390,29 @@ cat <<EOF >> $INIT_CONFIG
          }
       }
     },
+EOF
+fi
+
+if [ -s "$STANDARD_JSON_CFG" ]; then
+
+(
+    # concatenate configuration from multiple sources
+    if [ -s "$BUILTIN_JSON_CFG" ]
+    then
+        cat $BUILTIN_JSON_CFG
+    fi
+    cat $STANDARD_JSON_CFG
+) | perl -e '
+sub decrypt { $t=`echo "@_[0]" | openssl enc -d -aes256 -md md5 -a -pass "pass:'$(cat $INIT_KEY)'"` ; $t =~ s/\s+$//; return $t }
+while (<>) { s/"ENCRYPTED-(.*?)" *: *"(.*?)"/"\"$1\": \"" . decrypt($2) . "\""/e; print; }
+' >> $INIT_CONFIG
+
+else # a JSON inject file has not been provided
+
+cat <<EOF >> $INIT_CONFIG
+    "custom_fw_rules" : "${fw_rules}",
+    "implement_log_permissions_workaround" : true,
+    "syslog_servers_fixed_hostname": true,
     "clientid": "$( decrypt "U2FsdGVkX1+ivr/nAJsuHI5D7b7iycr80n+dlYxRxqVT4A0dzglGWaJcjfE0Aumq" )",
     "license_key": "$( decrypt "U2FsdGVkX1+nv2mIeEV7JhORcmzDU4t9NjPIda9UTp9aOxmT6/zcU/YSV1ptqC7n" )",
     "users" : [
@@ -402,6 +426,12 @@ cat <<EOF >> $INIT_CONFIG
       }
     ],
     "password": "$( decrypt "$( getconfig x_password )" )"
+EOF
+# Note there is no comma after the final entry
+
+fi
+
+cat <<EOF >> $INIT_CONFIG
 }
 EOF
 
@@ -411,14 +441,13 @@ fi
 
 # The INIT_CONFIG file will be processed, then deleted, by the post_install script
 
-# Configure syslog_monitoring, if installed:
-
+# Configure syslog_monitoring, if installed and trap hosts provided in config.ini
 monitored_dns_servers="$( getconfig monitored_dns_servers | tr ',' ' ' )"
 monitored_domain="$( getconfig monitored_domain )"
 syslog_mon_trap_hosts="$( getconfig syslog_mon_trap_hosts | tr ',' ' ' )"
 
 SYSLOG_MON_PATH=/opt/syslog_monitoring/Config
-if [ -d $SYSLOG_MON_PATH -a -f $SYSLOG_MON_PATH/config.ini ]; then
+if [ "$( getconfig syslog_mon_trap_hosts )" -a -d $SYSLOG_MON_PATH -a -f $SYSLOG_MON_PATH/config.ini ]; then
     sed -i.bak "s/^vm_host_name *=.*/vm_host_name = ${vm_name}/" $SYSLOG_MON_PATH/config.ini
     if [ "${monitored_domain}" ]; then
         sed -i.bak "s/^domain *=.*/domain = ${monitored_domain}/" $SYSLOG_MON_PATH/config.ini
@@ -457,4 +486,6 @@ fi
 if [ ! "$TRIAL_RUN" == "yes" ]; then
     # Remove config.ini to stop this script running again
     rm -f $CFGFILE
+    # Clean-up injected JSON configuration
+    rm -f $BUILTIN_JSON_CFG $STANDARD_JSON_CFG
 fi
