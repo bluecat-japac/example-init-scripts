@@ -403,7 +403,7 @@ if [ -s "$STANDARD_JSON_CFG" ]; then
     fi
     cat $STANDARD_JSON_CFG
 ) | perl -e '
-sub decrypt { $t=`echo "@_[0]" | openssl enc -d -aes256 -md md5 -a -pass "pass:'$(cat $INIT_KEY)'"` ; $t =~ s/\s+$//; return $t }
+sub decrypt { $t=`echo "@_[0]" | openssl enc -d -aes256 -md md5 -a -pass "pass:'"$(cat $INIT_KEY)"'"` ; $t =~ s/\s+$//; return $t }
 while (<>) { s/"ENCRYPTED-(.*?)" *: *"(.*?)"/"\"$1\": \"" . decrypt($2) . "\""/e; print; }
 ' >> $INIT_CONFIG
 
