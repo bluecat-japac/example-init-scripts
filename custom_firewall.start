@@ -1,0 +1,3 @@
+iptables -N ntp
+iptables -I INPUT -p udp --dport 123 -j ntp
+iptables -A ntp -j ACCEPT

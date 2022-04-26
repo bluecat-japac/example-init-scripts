@@ -1,0 +1,11 @@
+[Unit]
+Description=Apply further configuration from cloud inject files after psmd has started
+Before=proteusServer.service
+After=post_install.service psmd.service postgresServer.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c "/usr/bin/python3 /usr/local/bluecat/cloud/openstack/openstack-initial-config.py >> /var/log/init-config.log 2>&1"
+
+[Install]
+WantedBy=post_install.service

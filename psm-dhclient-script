@@ -1,0 +1,92 @@
+#!/usr/bin/python3
+
+# psm-dhclient-script: updates interfaces managed by BlueCat PSM
+# Version 2 Michael Nonweiler Jun 2021
+# Copyright BlueCat Networks 2021. All rights reserved.
+
+# This script updates only interface IP address config.
+# This does NOT update resolv.conf, hostname, MTU, etc. These should be configured by cloud init.
+
+import sys
+from os import environ
+from subprocess import run
+
+sys.path.append('/usr/local/cli/scripts')
+# Note: cli modules log to /var/log/cli.log
+from psmRequestResponse import cPsmRequestResponse
+from psmInterface import cPsmInterface
+
+def set_ipv4address(ifname, ipaddress, mask):
+    changed = False
+    interface = cPsmInterface(ifname)
+    interface.getInterface("Failed to get interface", unsaved=False)
+
+    # Ensure the interface is up -- this is used in PREINIT, prior to receiving an address
+    if not interface.getActive():
+        interface.setActive("on")
+        changed = True
+
+    if ipaddress:
+        # Set the new address if there is one
+        if not interface.existAddress("v4", ipaddress, str(mask)):
+            interface.v4addresses = []
+            interface.addAddress("v4", ipaddress, str(mask), "")
+            changed = True
+    else:
+        # Clear v4 addresses
+        if interface.v4addresses:
+            interface.v4addresses = []
+            changed = True
+
+    if changed:
+        request = cPsmRequestResponse("network/interfaces/" + ifname, "set")
+        request.setData(interface)
+        request.send('Failed to update interface')
+        interface.cleanupUnsavedInterface()
+
+def mask2cidr(netmask):
+    # Convert from subnet_mask to number of bits for CIDR
+    # For example: 255.255.255.0 ==> 24
+    # Split the string into 4 integers, then count the 1s in the binary representation
+    bytes = [ int(x) for x in netmask.split('.') ]
+    return sum([ bin(x).count('1') for x in bytes ])
+
+def action_setip():
+    # Note: alias IP not implemented
+    # MTU, routers, etc, not implemented. Use cloudinit
+    interface = environ.get("interface")
+    new_ip_address = environ.get("new_ip_address")
+    new_subnet_mask = environ.get("new_subnet_mask")
+    new_mask = mask2cidr(new_subnet_mask)
+    set_ipv4address(interface, new_ip_address, new_mask)
+
+def action_clearip():
+    interface = environ.get("interface")
+    set_ipv4address(interface, None, None)
+
+
+reason_to_action = {
+    "MEDIUM" : None,
+    "ARPCHECK" : None,
+    "ARPSEND" : None,
+    "PREINIT" : None,
+    "BOUND" : action_setip,
+    "RENEW" : action_setip,
+    "REBIND" : action_setip,
+    "REBOOT" : action_setip,
+    "EXPIRE" : action_clearip,
+    "FAIL" : None,
+    "RELEASE" : action_clearip,
+    "STOP" : None,
+    "TIMEOUT" : None # probably a NO-OP
+}
+
+reason = environ.get("reason")
+
+if reason not in reason_to_action:
+    # DHCPv6 not implemented
+    # PREINIT6|BOUND6|RENEW6|REBIND6|DEPREF6|EXPIRE6|RELEASE6|STOP6
+    exit(2)
+
+action = reason_to_action[reason]
+if action: action()

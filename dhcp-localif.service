@@ -1,0 +1,12 @@
+[Unit]
+Description=DHCPv4 client for local management interface
+After=post_install.service psmd.service init-config-stage1.service init-config-stage2.service  multi-user.target
+Requires=psmd.service
+
+[Service]
+Type=forking
+PIDFile=/var/run/dhclient-localif.pid
+ExecStart=/sbin/dhclient -cf /etc/dhcp/dhclient-localif.conf -pf /var/run/dhclient-localif.pid -lf /var/lib/dhcp/dhcp-localif.leases eth4
+
+[Install]
+WantedBy=multi-user.target

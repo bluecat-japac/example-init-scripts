@@ -1,0 +1,5 @@
+{
+    "datacenter_name" : "CEL",
+    "datastore_name" :"BCL-SIO-VOL-JPAC-101",
+    "resource_pool_name" : "bcl-internal-jpac"
+}

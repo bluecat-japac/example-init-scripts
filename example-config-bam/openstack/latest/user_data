@@ -1,0 +1,75 @@
+#cloud-config
+timezone: Asia/Shanghai
+write_files:
+- path: /etc/vmse/init/config.ini
+  permissions: 0644
+  content: |
+    vm_name=vBLUECAT_vBLUECAT_0001_BAM_0001
+    # Total number of BAM:
+    bam_num=1
+    # If number of BAM=1, then the DDS will start from no 2
+    LOCAL_V4_DHCP=yes
+    LOCAL_V6_0001=fdac:1400:4::0010
+    LOCAL_V6_0002=fdac:1400:4::0011
+    LOCAL_V6_0003=fdac:1400:4::0012
+    LOCAL_V6_0004=fdac:1400:4::0013
+    LOCAL_V6_0005=fdac:1400:4::0014
+    LOCAL_V6_0006=fdac:1400:4::0015
+    LOCAL_V6_0007=fdac:1400:4::0016
+    LOCAL_V6_PREFIX=64
+    OM_0001=172.16.197.4
+    OM_0002=172.16.197.5
+    OM_0003=172.16.197.6
+    OM_0004=172.16.197.7
+    OM_0005=172.16.197.8
+    OM_0006=172.16.197.9
+    OM_0007=172.16.197.10
+    OM_NET_MASK=24
+    OM_GATEWAY=172.16.197.1
+    OM_V6_0001=fdac:1400::0017
+    OM_V6_0002=fdac:1400::0018
+    OM_V6_0003=fdac:1400::0019
+    OM_V6_0004=fdac:1400::001A
+    OM_V6_0005=fdac:1400::001B
+    OM_V6_0006=fdac:1400::001C
+    OM_V6_0007=fdac:1400::001D
+    OM_V6_GATEWAY=fdac:1400::001E
+    OM_V6_PREFIX=64
+    # Only DDS has a service interface; numbering starts from 1
+    SERVER_0001=172.16.79.5
+    SERVER_0002=172.16.79.6
+    SERVER_0003=172.16.79.7
+    SERVER_0004=172.16.79.8
+    SERVER_0005=172.16.79.9
+    SERVER_0006=172.16.79.10
+    SERVER_0007=172.16.79.11
+    SERVER_NET_MASK=24
+    SERVER_GATEWAY=172.16.79.1
+    SERVER_V6_0001=fdac:1400:1::001F
+    SERVER_V6_0002=fdac:1400:1::0020
+    SERVER_V6_0003=fdac:1400:1::0021
+    SERVER_V6_0004=fdac:1400:1::0022
+    SERVER_V6_0005=fdac:1400:1::0023
+    SERVER_V6_0006=fdac:1400:1::0024
+    SERVER_V6_0007=fdac:1400:1::0025
+    SERVER_V6_GATEWAY=fdac:1400:1::0026
+    SERVER_V6_PREFIX=64
+    syslog_host1=fdac:1400::10
+    timezone=Asia/Shanghai
+    route1_gateway=172.16.197.2
+    route1_network=192.0.2.128/25
+    nameserver1=8.8.8.8
+    snmp_trap_hosts=fdac:1400::3,fdac:1400::4,fdac:1400::5
+    firewall_localif_v4net_1=192.0.2.0/28
+    firewall_localif_v6net_1=fdac:1400::0/120
+- path: /etc/vmse/init/builtin.ini
+  permissions: 0644
+  content: |
+    x_snmp_privphrase=
+    snmp_privtype=
+    x_snmp_authphrase=
+    snmp_authtype=
+    x_bluecat_password=
+    vmse_admin_ssh_key=
+    x_password=
+    stig_compliance=no

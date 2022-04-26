@@ -1,0 +1,140 @@
+{
+    "services": [], 
+    "networks": [
+        {
+            "network_id": "6bc37537-7590-41d6-b458-ba606475c74b", 
+            "type": "ipv6", 
+            "netmask": "ffff:ffff:ffff:ffff:ffff::", 
+            "link": "tapc51ac54f-e2", 
+            "routes": [
+                {
+                    "netmask": "::", 
+                    "network": "::", 
+                    "gateway": "211:3:3::1"
+                }
+            ], 
+            "ip_address": "211:3:3::12", 
+            "id": "network0"
+        }, 
+        {
+            "network_id": "a63bc58c-e0f8-4cc4-9f71-ef5d52afaba1", 
+            "type": "ipv4", 
+            "netmask": "255.255.255.0", 
+            "link": "tap3b67d8a7-45", 
+            "routes": [
+                {
+                    "netmask": "0.0.0.0", 
+                    "network": "0.0.0.0", 
+                    "gateway": "112.30.0.1"
+                }
+            ], 
+            "ip_address": "112.30.37.136", 
+            "id": "network1"
+        }, 
+        {
+            "network_id": "a63bc58c-e0f8-4cc4-9f71-ef5d52afaba1", 
+            "type": "ipv6", 
+            "netmask": "ffff:ffff:ffff:ffff::", 
+            "link": "tap3b67d8a7-45", 
+            "routes": [
+                {
+                    "netmask": "::", 
+                    "network": "::", 
+                    "gateway": "112:30::1"
+                }
+            ], 
+            "ip_address": "112:30::37:124", 
+            "id": "network2"
+        }, 
+        {
+            "network_id": "3e28ea6e-bd2b-4e9d-b7ac-927b26f1e525", 
+            "type": "ipv4", 
+            "netmask": "255.0.0.0", 
+            "link": "tap130f3755-c8", 
+            "routes": [
+                {
+                    "netmask": "0.0.0.0", 
+                    "network": "0.0.0.0", 
+                    "gateway": "113.0.0.1"
+                }
+            ], 
+            "ip_address": "113.30.37.125", 
+            "id": "network3"
+        }, 
+        {
+            "network_id": "3e28ea6e-bd2b-4e9d-b7ac-927b26f1e525", 
+            "type": "ipv6", 
+            "netmask": "ffff:ffff:ffff:ffff::", 
+            "link": "tap130f3755-c8", 
+            "routes": [
+                {
+                    "netmask": "::", 
+                    "network": "::", 
+                    "gateway": "113:254::1"
+                }
+            ], 
+            "ip_address": "113:254::119", 
+            "id": "network4"
+        }, 
+        {
+            "network_id": "3dd62163-c2bf-44aa-8ff1-cdd71b827686", 
+            "type": "ipv4", 
+            "netmask": "255.0.0.0", 
+            "link": "tap64d176f7-18", 
+            "routes": [
+                {
+                    "netmask": "0.0.0.0", 
+                    "network": "0.0.0.0", 
+                    "gateway": "141.10.0.1"
+                }
+            ], 
+            "ip_address": "141.30.37.120", 
+            "id": "network5"
+        }, 
+        {
+            "network_id": "3dd62163-c2bf-44aa-8ff1-cdd71b827686", 
+            "type": "ipv6", 
+            "netmask": "ffff:ffff:ffff:ffff::", 
+            "link": "tap64d176f7-18", 
+            "routes": [
+                {
+                    "netmask": "::", 
+                    "network": "::", 
+                    "gateway": "141:10::1"
+                }
+            ], 
+            "ip_address": "141:10::37:120", 
+            "id": "network6"
+        }
+    ], 
+    "links": [
+        {
+            "type": "vhostuser", 
+            "vif_id": "c51ac54f-e20f-4d42-9d03-c51df3fda5c2", 
+            "ethernet_mac_address": "00:0c:29:d6:7c:dc", 
+            "id": "tapc51ac54f-e2", 
+            "mtu": null
+        }, 
+        {
+            "type": "vhostuser", 
+            "vif_id": "3b67d8a7-459c-4b5f-bbeb-012050cb9256", 
+            "ethernet_mac_address": "00:0c:29:d6:7c:e6", 
+            "id": "tap3b67d8a7-45", 
+            "mtu": null
+        }, 
+        {
+            "type": "vhostuser", 
+            "vif_id": "130f3755-c805-4c2b-a189-822de5efd784", 
+            "ethernet_mac_address": "00:0c:29:d6:7c:f0", 
+            "id": "tap130f3755-c8", 
+            "mtu": null
+        }, 
+        {
+            "type": "vhostuser", 
+            "vif_id": "64d176f7-1850-44fa-86f3-d7f7d064cbe8", 
+            "ethernet_mac_address": "00:0c:29:d6:7c:04", 
+            "id": "tap64d176f7-18", 
+            "mtu": null
+        }
+    ]
+}

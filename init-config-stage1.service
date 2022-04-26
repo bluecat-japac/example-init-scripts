@@ -1,0 +1,11 @@
+[Unit]
+Description=Decode inject files, and perform pre-boot configuration
+After=cloud-init.service
+Before=post_install.service psmd.service postgresServer.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c "/bin/bash /usr/local/bluecat/cloud/generate-init-config.sh |& tee -a /var/log/init-config.log"
+
+[Install]
+WantedBy=post_install.service
