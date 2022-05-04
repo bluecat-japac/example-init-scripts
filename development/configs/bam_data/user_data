@@ -1,17 +1,16 @@
 #cloud-config
 timezone: Asia/Shanghai
 write_files:
-- path: /etc/cloud/cloud.cfg.d/custom_networking.cfg
+- path: /etc/network/interfaces
   permission: '0644'
   owner: 'root:root'
   content: |
-    network:
-      version: 1
-      config:
-      - type: physical
-        name: eth0
-        subnets:
-          - type: dhcp6
+    auto lo
+      iface lo inet loopback
+      iface lo inet6 loopback
+    auto eth0
+      iface eth0 inet dhcp
+      iface eth0 inet6 dhcp
 - path: /etc/vmse/init/config.ini
   permissions: 0644
   content: |
