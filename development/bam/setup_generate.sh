@@ -16,16 +16,13 @@ sleep 5
 cat /etc/bcn/init-config.json
 sleep 3
 
-# Setup and run init-bluecat-netconf.py
-/mnt/usr/local/bluecat/cloud/init-bluecat-netconf.py
-sleep 5
+cat /etc/bcn/init-config.json
 
-
-# Run proteus_post_install.sh
+echo "Run proteus_post_install.sh"
 /usr/local/bluecat/proteus_post_install.sh || true
 sleep 5
 
-# Enable and start psmd:
+echo "Enable and start psmd"
 systemctl enable --now runBluecat
 
 service psmd start

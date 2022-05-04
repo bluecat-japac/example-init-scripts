@@ -68,7 +68,7 @@ function local_if_config {
          ]
 EOF
     else
-        netconf_generated_interfaces="/etc/network/interfaces.d/50-cloud-init.cfg"
+        netconf_generated_interfaces="/etc/network/interfaces.d/50-cloud-init"
         perl -e '
             $eth_if = "'$eth_if'";
             @v4addresses = (); @v6addresses = ();
@@ -91,7 +91,7 @@ EOF
                     }";
                 }
                 elsif (/^iface $eth_if(|:\d) inet6 static/) {
-                    $_ = <>; /^\s+address ([0-9a-f:]+)/i;
+                    $_ = <>; /^\s+address ([0-9a-f:]+)\/([0-9]+)/i;
                     $address = $1;
                     $netmask = $2;
                     push @v6addresses, "{
@@ -446,7 +446,7 @@ if [ ! "$TRIAL_RUN" == "yes" ]; then
 		systemctl disable docker.dns_stat_agent.service
 		systemctl disable docker.packetbeat.service
 	fi
-	
+
 	if [ "$( getconfig CM_SWITCH )" == "false" ]
 	then
 		systemctl disable docker.syslog.service

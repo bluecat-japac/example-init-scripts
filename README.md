@@ -394,6 +394,14 @@ pw: P@ssw0rd
 Other NOTES
 ==============================================================
 
+Configure Custom Firewall for DHCPv4 and DHCPv4 (Only for DDS) 
+```
+iptables -A INPUT -p udp -m udp --dport 67:68 -j ACCEPT
+iptables -A OUTPUT -p udp -m udp --sport 67:68 -j ACCEPT
+
+ip6tables -A INPUT -p udp -m udp --dport 546:547 -j ACCEPT
+ip6tables -A OUTPUT -p udp -m udp --sport 546:547 -j ACCEPT
+```
 
 
 ========================================
