@@ -68,7 +68,7 @@ function local_if_config {
          ]
 EOF
     else
-        netconf_generated_interfaces="/etc/network/interfaces.d/50-cloud-init.cfg"
+        netconf_generated_interfaces="/etc/network/interfaces.d/50-cloud-init"
         perl -e '
             $eth_if = "'$eth_if'";
             @v4addresses = (); @v6addresses = ();
@@ -91,7 +91,7 @@ EOF
                     }";
                 }
                 elsif (/^iface $eth_if(|:\d) inet6 static/) {
-                    $_ = <>; /^\s+address ([0-9a-f:]+)/i;
+                    $_ = <>; /^\s+address ([0-9a-f:]+)\/([0-9]+)/i;
                     $address = $1;
                     $netmask = $2;
                     push @v6addresses, "{
@@ -154,6 +154,15 @@ then
             }]'
  fi
 
+# Support Enble DHCPv4 in future
+ OM_GATEWAY=$( getconfig OM_GATEWAY )
+
+ OM_V6_GATEWAY=$( getconfig OM_V6_GATEWAY )
+ if [ "$( getconfig ENABLE_V6_DHCP )" == "yes" ]
+ then
+   OM_V6_GATEWAY=$( getconfig DHCP_V6_ADDRESS )
+ fi
+
 cat <<EOF > $INIT_CONFIG
 {
    "hostname" : "BAM",
@@ -176,12 +185,12 @@ cat <<EOF > $INIT_CONFIG
    "default_routes" : [
       {
          "cidr" : 0,
-         "gateway" : "$( getconfig OM_GATEWAY )",
+         "gateway" : "$OM_GATEWAY",
          "network" : "default"
       },
       {
          "cidr" : 0,
-         "gateway" : "$( getconfig OM_V6_GATEWAY )",
+         "gateway" : "$OM_V6_GATEWAY",
          "network" : "default"
       }
    ],
@@ -257,6 +266,16 @@ EOF
                "cidr" : $OM_NET_MASK
             }]'
  fi
+
+ # Support Enble DHCPv4 in future
+ SERVER_GATEWAY=$( getconfig SERVER_GATEWAY )
+
+ SERVER_V6_GATEWAY=$( getconfig SERVER_V6_GATEWAY )
+ if [ "$( getconfig ENABLE_V6_DHCP )" == "yes" ]
+ then
+   SERVER_V6_GATEWAY=$( getconfig DHCP_V6_ADDRESS )
+ fi
+
 cat <<EOF >> $INIT_CONFIG
       ,
       {
@@ -277,12 +296,12 @@ cat <<EOF >> $INIT_CONFIG
    "default_routes" : [
       {
          "cidr" : 0,
-         "gateway" : "$( getconfig SERVER_GATEWAY )",
+         "gateway" : "$SERVER_GATEWAY",
          "network" : "default"
       },
       {
          "cidr" : 0,
-         "gateway" : "$( getconfig SERVER_V6_GATEWAY )",
+         "gateway" : "$SERVER_V6_GATEWAY",
          "network" : "default"
       }
    ],
@@ -404,7 +423,21 @@ while (<>) { s/"ENCRYPTED-(.*?)" *: *"(.*?)"/"\"$1\": \"" . decrypt($2) . "\""/e
 
 else # a JSON inject file has not been provided
 
+  ENABLE_V4_DHCP=false
+  ENABLE_V6_DHCP=false
+  # Support work with DHCP for all interfaces
+  if [ "$( getconfig ENABLE_V4_DHCP )" == "yes" ]
+  then
+    ENABLE_V4_DHCP=true
+    fi
+  if [ "$( getconfig ENABLE_V6_DHCP )" == "yes" ]
+  then
+    ENABLE_V6_DHCP=true
+  fi
+
 cat <<EOF >> $INIT_CONFIG
+    "enable_dhcp_v4": $ENABLE_V4_DHCP,
+    "enable_dhcp_v6": $ENABLE_V6_DHCP,
     "custom_fw_rules" : "$( getconfig x_iptables )",
     "implement_log_permissions_workaround" : true,
     "syslog_servers_fixed_hostname": true,
@@ -446,7 +479,7 @@ if [ ! "$TRIAL_RUN" == "yes" ]; then
 		systemctl disable docker.dns_stat_agent.service
 		systemctl disable docker.packetbeat.service
 	fi
-	
+
 	if [ "$( getconfig CM_SWITCH )" == "false" ]
 	then
 		systemctl disable docker.syslog.service

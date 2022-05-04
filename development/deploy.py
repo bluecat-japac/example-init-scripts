@@ -7,6 +7,10 @@ import json, sys, os
 
 from common.vcenter import Vcenter
 from common.constant import *
+from pyVim.task import WaitForTask
+
+from common.cdrom import new_cdrom_spec, find_device, find_free_ide_controller, get_physical_cdrom
+
 from pyVmomi import vim, vmodl
 import subprocess
 
@@ -37,6 +41,46 @@ def decrypt_password(pw, key):
     ps.wait()
     return decrypted_text.decode("UTF-8").strip()
 
+
+def add_virtual_disc_drive(vm, iso_path):
+    # remember to stop vm before running this function
+    controller = find_free_ide_controller(vm)
+    if controller is None:
+        raise Exception('Failed to find a free slot on the IDE controller')
+    cdrom = None
+
+    cdrom_lun = get_physical_cdrom(vm.runtime.host)
+    if cdrom_lun is not None:
+        backing = vim.vm.device.VirtualCdrom.AtapiBackingInfo()
+        backing.deviceName = cdrom_lun.deviceName
+        device_spec = vim.vm.device.VirtualDeviceSpec()
+        device_spec.device = new_cdrom_spec(controller.key, backing)
+        device_spec.operation = vim.vm.device.VirtualDeviceSpec.Operation.add
+        config_spec = vim.vm.ConfigSpec(deviceChange=[device_spec])
+        WaitForTask(vm.Reconfigure(config_spec))
+
+        cdroms = find_device(vm, vim.vm.device.VirtualCdrom)
+        # TODO isinstance(x.backing, type(backing))
+        cdrom = next(filter(lambda x: type(x.backing) == type(backing) and
+                                      x.backing.deviceName == cdrom_lun.deviceName, cdroms))
+    else:
+        print('Skipping physical CD-Rom test as no device present.')
+
+    cdrom_operation = vim.vm.device.VirtualDeviceSpec.Operation
+    if iso_path is not None:
+        device_spec = vim.vm.device.VirtualDeviceSpec()
+        if cdrom is None:  # add a cdrom
+            backing = vim.vm.device.VirtualCdrom.IsoBackingInfo(fileName=iso_path)
+            cdrom = new_cdrom_spec(controller.key, backing)
+            device_spec.operation = cdrom_operation.add
+        else:  # edit an existing cdrom
+            backing = vim.vm.device.VirtualCdrom.IsoBackingInfo(fileName=iso_path)
+            cdrom.backing = backing
+            device_spec.operation = cdrom_operation.edit
+        device_spec.device = cdrom
+        config_spec = vim.vm.ConfigSpec(deviceChange=[device_spec])
+        WaitForTask(vm.Reconfigure(config_spec))
+    return True
 
 def start_vm(vm_obj):
     vcenter.start_vm(vm_obj)
@@ -243,6 +287,10 @@ if __name__ == "__main__":
             clone_vm(source_vm_full_name, folder_name)
             vm = get_vm_by_name(cloned_vm_full_name)
 
+        vcenter.stop_vm(vm)
+        add_virtual_disc_drive(vm, DDS_ISO_PATH)
+        vcenter.start_vm(vm)
+
         # copy images to script
         copy_file_to_server(vm, EXAMPLE_INIT_SCRIPT_PATH)
         copy_file_to_server(vm, SYSLOG_IMAGE_NAME)
@@ -294,6 +342,10 @@ if __name__ == "__main__":
         if not vm:
             clone_vm(source_vm_full_name, folder_name)
             vm = get_vm_by_name(cloned_vm_full_name)
+
+        vcenter.stop_vm(vm)
+        add_virtual_disc_drive(vm, BAM_ISO_PATH)
+        vcenter.start_vm(vm)
 
         # copy script to sever
         try:

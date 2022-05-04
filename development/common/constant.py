@@ -2,9 +2,12 @@
 # Copyright 2021 BlueCat Networks (USA) Inc. and its affiliates
 
 VCENTER_TEMPLATE = 'Tenants-Internal/JPAC/Templates/'
-VCENTER_CLONE_PATH = 'Tenants-Internal/JPAC/Templates/TEST_CLONE_BLUECAT/'
+VCENTER_CLONE_PATH = 'Tenants-Internal/JPAC/TEST_DHCP/'
 DDS_VERSION = 'bdds_esx_9.4.0-674.GA.bcn_amd64'
 BAM_VERSION = 'bam_esx_9.4.0-674.GA.bcn_amd64'
+
+DDS_ISO_PATH = '[BCL-SIO-VOL-JPAC-101] ISO-images/JPAC-test/config-nw-i-dhcp-eth2.iso'
+BAM_ISO_PATH = '[BCL-SIO-VOL-JPAC-101] ISO-images/JPAC-test/config-nw-i-dhcp-eth0.iso'
 
 EXAMPLE_INIT_SCRIPT_PATH = 'example-init-scripts.tar.gz'
 SYSLOG_IMAGE_NAME = 'syslog_mon_amd64.tar.gz'
