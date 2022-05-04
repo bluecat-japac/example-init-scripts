@@ -154,15 +154,6 @@ then
             }]'
  fi
 
-# Support Enble DHCPv4 in future
- OM_GATEWAY=$( getconfig OM_GATEWAY )
-
- OM_V6_GATEWAY=$( getconfig OM_V6_GATEWAY )
- if [ "$( getconfig ENABLE_V6_DHCP )" == "yes" ]
- then
-   OM_V6_GATEWAY=$( getconfig DHCP_V6_ADDRESS )
- fi
-
 cat <<EOF > $INIT_CONFIG
 {
    "hostname" : "BAM",
@@ -185,12 +176,12 @@ cat <<EOF > $INIT_CONFIG
    "default_routes" : [
       {
          "cidr" : 0,
-         "gateway" : "$OM_GATEWAY",
+         "gateway" : "$( getconfig OM_GATEWAY )",
          "network" : "default"
       },
       {
          "cidr" : 0,
-         "gateway" : "$OM_V6_GATEWAY",
+         "gateway" : "$( getconfig OM_V6_GATEWAY )",
          "network" : "default"
       }
    ],
@@ -266,16 +257,6 @@ EOF
                "cidr" : $OM_NET_MASK
             }]'
  fi
-
- # Support Enble DHCPv4 in future
- SERVER_GATEWAY=$( getconfig SERVER_GATEWAY )
-
- SERVER_V6_GATEWAY=$( getconfig SERVER_V6_GATEWAY )
- if [ "$( getconfig ENABLE_V6_DHCP )" == "yes" ]
- then
-   SERVER_V6_GATEWAY=$( getconfig DHCP_V6_ADDRESS )
- fi
-
 cat <<EOF >> $INIT_CONFIG
       ,
       {
@@ -296,12 +277,12 @@ cat <<EOF >> $INIT_CONFIG
    "default_routes" : [
       {
          "cidr" : 0,
-         "gateway" : "$SERVER_GATEWAY",
+         "gateway" : "$( getconfig SERVER_GATEWAY )",
          "network" : "default"
       },
       {
          "cidr" : 0,
-         "gateway" : "$SERVER_V6_GATEWAY",
+         "gateway" : "$( getconfig SERVER_V6_GATEWAY )",
          "network" : "default"
       }
    ],
@@ -423,21 +404,7 @@ while (<>) { s/"ENCRYPTED-(.*?)" *: *"(.*?)"/"\"$1\": \"" . decrypt($2) . "\""/e
 
 else # a JSON inject file has not been provided
 
-  ENABLE_V4_DHCP=false
-  ENABLE_V6_DHCP=false
-  # Support work with DHCP for all interfaces
-  if [ "$( getconfig ENABLE_V4_DHCP )" == "yes" ]
-  then
-    ENABLE_V4_DHCP=true
-    fi
-  if [ "$( getconfig ENABLE_V6_DHCP )" == "yes" ]
-  then
-    ENABLE_V6_DHCP=true
-  fi
-
 cat <<EOF >> $INIT_CONFIG
-    "enable_dhcp_v4": $ENABLE_V4_DHCP,
-    "enable_dhcp_v6": $ENABLE_V6_DHCP,
     "custom_fw_rules" : "$( getconfig x_iptables )",
     "implement_log_permissions_workaround" : true,
     "syslog_servers_fixed_hostname": true,

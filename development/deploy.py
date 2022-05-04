@@ -289,6 +289,7 @@ if __name__ == "__main__":
 
         vcenter.stop_vm(vm)
         add_virtual_disc_drive(vm, DDS_ISO_PATH)
+        vcenter.change_network(vm, DDS_ETH_NAMES)
         vcenter.start_vm(vm)
 
         # copy images to script
@@ -321,11 +322,7 @@ if __name__ == "__main__":
                                DDS.DDS_USERNAME_NEW, DDS.DDS_PASSWORD_NEW)
         print("Execute vm output: ", output)
 
-        print("Start to run init_netconf_and_config.sh ...")
-        host_bash_file_path = 'init_netconf_and_config.sh'
-        temp_sh_path_in_host = '/root/init_netconf_and_config.sh'
-        output = execute_sh_vm(vm, DDS.DDS_USERNAME_NEW, DDS.DDS_PASSWORD_NEW, host_bash_file_path, temp_sh_path_in_host)
-        print("Execute vm output: ", output)
+        vcenter.reboot_vm(vm)
     elif device == "bam":
         source_vm_full_name = VCENTER_TEMPLATE + BAM_VERSION
         cloned_vm_full_name = VCENTER_CLONE_PATH + BAM_VERSION
@@ -375,9 +372,4 @@ if __name__ == "__main__":
         # output = execute_sh_vm(vm, BAM.BAM_USERNAME, BAM.BAM_PASSWORD, host_bash_file_path, temp_sh_path_in_host)
         print("Execute vm output: ", output)
 
-        print("Start to run init_netconf_and_config.sh ...")
-        host_bash_file_path = 'init_netconf_and_config.sh'
-        temp_sh_path_in_host = '/root/init_netconf_and_config.sh'
-        output = execute_sh_vm(vm, BAM.BAM_USERNAME_NEW, BAM.BAM_PASSWORD_NEW, host_bash_file_path, temp_sh_path_in_host)
-        # output = execute_sh_vm(vm, BAM.BAM_USERNAME, BAM.BAM_PASSWORD, host_bash_file_path, temp_sh_path_in_host)
-        print("Execute vm output: ", output)
+        vcenter.reboot_vm(vm)

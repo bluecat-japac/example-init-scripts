@@ -75,6 +75,4 @@ mv /mnt/opt/unpack/*/syslog_monitoring.tar \
 cp /mnt/opt/unpack/*/services/docker.*.service /mnt/lib/systemd/system/
 chmod 755 /mnt/lib/systemd/system/docker.*.service
 
-touch ~/trial_run
-
 mkdir -p /etc/vmse/init/

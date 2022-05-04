@@ -1,0 +1,76 @@
+#cloud-config
+timezone: Asia/Shanghai
+write_files:
+- path: /etc/cloud/cloud.cfg.d/custom_networking.cfg
+  permission: '0644'
+  owner: 'root:root'
+  content: |
+    network:
+      version: 1
+      config:
+      - type: physical
+        name: eth0
+        subnets:
+          - type: dhcp6
+- path: /etc/vmse/init/config.ini
+  permissions: 0644
+  content: |
+    vvm_name=vBLUECAT_vBLUECAT_0001_BAM_0001
+	# Total number of BAM:
+	bam_num=1
+	# If number of BAM=1, then the DDS will start from no 2
+	LOCAL_V4_DHCP=yes
+    LOCAL_V6_0001=fdac:1400::0320
+    LOCAL_V6_0002=fdac:1400::0321
+    LOCAL_V6_0003=fdac:1400::0322
+    LOCAL_V6_0004=fdac:1400::0323
+    LOCAL_V6_0005=fdac:1400::0324
+    LOCAL_V6_0006=fdac:1400::0325
+    LOCAL_V6_0007=fdac:1400::0326
+    LOCAL_V6_PREFIX=64
+	OM_V6_0001=fdac:1500::0320
+	OM_V6_0002=fdac:1500::0321
+	OM_V6_0003=fdac:1500::0322
+	OM_V6_0004=fdac:1500::0323
+	OM_V6_0005=fdac:1500::0324
+	OM_V6_0006=fdac:1500::0325
+	OM_V6_0007=fdac:1500::0326
+	OM_V6_GATEWAY=fdac:1500::001E
+	OM_V6_PREFIX=64
+	# Only DDS has a service interface; numbering starts from 1
+	SERVER_V6_0001=fdac:1600::0321
+	SERVER_V6_0002=fdac:1600::0322
+	SERVER_V6_0003=fdac:1600::0323
+	SERVER_V6_0004=fdac:1600::0324
+	SERVER_V6_0005=fdac:1600::0325
+	SERVER_V6_0006=fdac:1600::0326
+	SERVER_V6_0007=fdac:1600::0327
+	SERVER_V6_GATEWAY=fdac:1600::0026
+	SERVER_V6_PREFIX=64
+	# Enable DHCP
+	# Support DHCPv4 in the future
+	ENABLE_V4_DHCP=no
+	DHCP_V4_GATEWAY=192.168.8.1
+	ENABLE_V6_DHCP=no
+	DHCP_V6_ADDRESS=fc9c:4094:15ef:8::1
+	syslog_host1=fdac:1400::10
+	timezone=Asia/Shanghai
+	route1_gateway=189.105.11.2
+	route1_network=189.105.11.0/24
+	nameserver1=2001:4860:4860::8888
+	snmp_trap_hosts=fdac:1400::3,fdac:1400::4,fdac:1400::5
+	firewall_localif_v4net_1=192.168.16.0/24
+	firewall_localif_v6net_1=fdac:1400::0/120
+- path: /etc/vmse/init/builtin.ini
+  permissions: 0644
+  content: |
+    x_snmp_privphrase=
+	snmp_privtype=DES
+	x_snmp_authphrase=
+	snmp_authtype=SHA
+	x_bluecat_password=
+	vmse_admin_ssh_key=
+	x_password=
+	x_clientid=
+	x_license_key=
+	stig_compliance=yes

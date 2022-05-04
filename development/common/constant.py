@@ -7,6 +7,8 @@ DDS_VERSION = 'bdds_esx_9.4.0-674.GA.bcn_amd64'
 BAM_VERSION = 'bam_esx_9.4.0-674.GA.bcn_amd64'
 
 DDS_ISO_PATH = '[BCL-SIO-VOL-JPAC-101] ISO-images/JPAC-test/config-nw-i-dhcp-eth2.iso'
+DDS_ETH_NAMES = ['jpac|jpac-anp|jpac-net010', 'jpac|jpac-anp|jpac-net009', 'jpac|jpac-anp|jpac-net008']
+
 BAM_ISO_PATH = '[BCL-SIO-VOL-JPAC-101] ISO-images/JPAC-test/config-nw-i-dhcp-eth0.iso'
 
 EXAMPLE_INIT_SCRIPT_PATH = 'example-init-scripts.tar.gz'

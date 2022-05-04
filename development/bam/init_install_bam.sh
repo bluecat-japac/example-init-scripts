@@ -93,5 +93,4 @@ sed -i '/dhclient/s/eth4/eth2/' /mnt/lib/systemd/system/dhcp-localif.service
 mkdir -p /etc/vmse/init/
 cp /z/split_inject_file.sh /etc/vmse/init/
 
-touch ~/trial_run
 

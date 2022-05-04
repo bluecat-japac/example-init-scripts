@@ -192,6 +192,10 @@ class Vcenter:
         self.wait_for_task(task)
         mirkwood_logger.info(f"Started")
 
+    def reboot_vm(self, vm):
+        task = vm.ResetVM_Task()
+        self.wait_for_task(task)
+
     def get_vm_by_name(self, vm_name):
         mirkwood_logger.info(f"Getting VM : {vm_name}")
         # vm = self.get_obj([vim.VirtualMachine], vm_name)
@@ -230,3 +234,47 @@ class Vcenter:
         vm_name = vm.config.name
         return {"vm_name": vm_name, "ip": ip, "template": template, "status":
             status}
+
+    def change_network(self, vm, network_names=(), is_vds=True):
+        # This code is for changing only one Interface. For multiple Interface
+        # Iterate through a loop of network names.
+        device_change = []
+        network_names = list(network_names[::-1])
+        for device in vm.config.hardware.device:
+            if not network_names:
+                break
+
+            if isinstance(device, vim.vm.device.VirtualVmxnet3):
+                nicspec = vim.vm.device.VirtualDeviceSpec()
+                nicspec.operation = \
+                    vim.vm.device.VirtualDeviceSpec.Operation.edit
+                nicspec.device = device
+                nicspec.device.wakeOnLanEnabled = True
+                network_name = network_names.pop()
+                if not is_vds:
+                    nicspec.device.backing = \
+                        vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+                    nicspec.device.backing.network = self.get_obj([vim.Network], network_name)
+                    nicspec.device.backing.deviceName = network_name
+                else:
+                    network = self.get_obj([vim.dvs.DistributedVirtualPortgroup], network_name)
+                    dvs_port_connection = vim.dvs.PortConnection()
+                    dvs_port_connection.portgroupKey = network.key
+                    dvs_port_connection.switchUuid = \
+                        network.config.distributedVirtualSwitch.uuid
+                    nicspec.device.backing = \
+                        vim.vm.device.VirtualEthernetCard. \
+                            DistributedVirtualPortBackingInfo()
+                    nicspec.device.backing.port = dvs_port_connection
+
+                nicspec.device.connectable = \
+                    vim.vm.device.VirtualDevice.ConnectInfo()
+                nicspec.device.connectable.startConnected = True
+                nicspec.device.connectable.allowGuestControl = True
+
+                device_change.append(nicspec)
+
+        config_spec = vim.vm.ConfigSpec(deviceChange=device_change)
+        task = vm.ReconfigVM_Task(config_spec)
+        self.wait_for_task(task)
+        print("Successfully changed network")

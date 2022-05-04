@@ -10,11 +10,10 @@ chmod 755 /etc/vmse/init/*
 service psmd stop
 
 sleep 5
+echo "Setup and run generate-init-config.sh"
 /mnt/usr/local/bluecat/cloud/generate-init-config.sh
 cat /etc/bcn/init-config.json
 
-/mnt/usr/local/bluecat/cloud/init-bluecat-netconf.py
-sleep 5
 
 # check docker
 docker ps -a
