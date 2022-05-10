@@ -202,6 +202,12 @@ for ifdata in initdata['interfaces']:
     for addr in ifdata['v4addresses'] + ifdata['v6addresses']:
         assert set(addr.keys()) == set(['address','cidr'])
 
+    if ifname == 'lo':
+        if ifdata['v4addresses']:
+            assert len(ifdata['v4addresses']) <= 1
+        lov4_address = ifdata['v4addresses'][0] if ifdata['v4addresses'] else {}
+        lov6_address = ifdata['v6addresses'][0] if ifdata['v6addresses'] else {}
+
     if ifname == 'eth0' and is_bdds:
         if not primary_ipv4_address:
             # Make first address in each list the primary address
@@ -220,6 +226,9 @@ for ifdata in initdata['interfaces']:
         if ifdata['v4addresses']:
             ifdata['v4addresses'][0]['flags'] = 1 # primary interface flag on BAM
 
+        if ifdata['v6addresses'] and not ifdata['v4addresses']:
+            ifdata['v6addresses'][0]['flags'] = 1 # primary interface flag on BAM
+
     if ifname == 'eth2' and is_bdds:
         # Allow only one IPv4 address on the BDDS management interface
         # This is flagged as the management address, even though dedicated management is not yet enabled
@@ -227,7 +236,7 @@ for ifdata in initdata['interfaces']:
             assert len(ifdata['v4addresses']) == 1
             ifdata['v4addresses'][0]['flags'] = 4 # management interface flag
 
-        if ifdata['v6addresses']:
+        if ifdata['v6addresses'] and not ifdata['v4addresses']:
             ifdata['v6addresses'][0]['flags'] = 4 # management interface flag
 
     if vlanid: # Add new VLAN interface
@@ -280,6 +289,66 @@ psmdbset("network-interfaces",
     "--interfaces", json.dumps({ 'interfaces' : interfaces_list }),
     "--routes", json.dumps({ 'routes' : routes_list }),
     *optargs)
+
+
+# Support configure MTU
+srv_mtu = meta.get('srv_mtu', '')
+om_mtu = meta.get('om_mtu', '')
+mtu_template = '/usr/bin/ip link set dev {} mtu {}'
+post_up_template = 'post-up {}'.format(mtu_template)
+is_eth2 = is_eth4 =False
+if om_mtu:
+    if is_bam:
+        print("Configure MTU: {} for BAM: eth0".format(om_mtu))
+        subprocess.run(mtu_template.format('eth0', om_mtu), shell=True, stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT)
+        cmdout = subprocess.run(
+            ['/usr/bin/ip', 'addr', 'show', 'eth2'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
+        if 'does not exist' not in cmdout:
+            print("Configure MTU: {} for BAM: eth2".format(om_mtu))
+            subprocess.run(mtu_template.format('eth2', om_mtu), shell=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+            is_eth2 = True
+    elif is_bdds:
+        cmdout = subprocess.run(
+            ['/usr/bin/ip', 'addr', 'show', 'eth2'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
+        if 'does not exist' not in cmdout:
+            print("Configure MTU: {} for DDS: eth2".format(om_mtu))
+            subprocess.run(mtu_template.format('eth2', om_mtu), shell=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+            is_eth2 = True
+
+        cmdout = subprocess.run(
+            ['/usr/bin/ip', 'addr', 'show', 'eth4'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
+        if 'does not exist' not in cmdout:
+            print("Configure MTU: {} for DDS: eth4".format(om_mtu))
+            subprocess.run(mtu_template.format('eth4', om_mtu), shell=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+            is_eth4 = True
+
+    # support configure mtu for the future reboot
+    with open('/etc/network/interfaces', 'a+') as interfaces:
+        if is_bam:
+            interfaces.write(post_up_template.format('eth0', om_mtu) + '\n')
+        if is_eth2:
+            interfaces.write(post_up_template.format('eth2', om_mtu) + '\n')
+        if is_bdds and is_eth4:
+            interfaces.write(post_up_template.format('eth4', om_mtu) + '\n')
+
+
+if srv_mtu:
+    if is_bdds:
+        print("Configure MTU: {} for DDS: eth0".format(srv_mtu))
+        subprocess.run(mtu_template.format('eth0', srv_mtu), shell=True, stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT)
+    print("Configure MTU: {} in lo".format(srv_mtu))
+    subprocess.run(mtu_template.format('lo', srv_mtu), shell=True, stdout=subprocess.PIPE,
+                   stderr=subprocess.STDOUT)
+    # support configure mtu for the future reboot
+    with open('/etc/network/interfaces', 'a+') as interfaces:
+        if is_bdds:
+            interfaces.write(post_up_template.format('eth0', srv_mtu) + '\n')
+        interfaces.write(post_up_template.format('lo', srv_mtu) + '\n')
 
 resolv_conf_filename = '/etc/resolv.conf'
 # Configure nameservers

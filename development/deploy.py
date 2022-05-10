@@ -270,6 +270,8 @@ def copy_file_to_server(vm, file_name):
 
 if __name__ == "__main__":
     device = sys.argv[1].strip().lower()
+    vm = None
+
     if device == "dds":
         source_vm_full_name = VCENTER_TEMPLATE + DDS_VERSION
         cloned_vm_full_name = VCENTER_CLONE_PATH + DDS_VERSION
@@ -288,7 +290,9 @@ if __name__ == "__main__":
             vm = get_vm_by_name(cloned_vm_full_name)
 
         vcenter.stop_vm(vm)
-        add_virtual_disc_drive(vm, DDS_ISO_PATH)
+        if SUPPORT_DHCP:
+            add_virtual_disc_drive(vm, DDS_ISO_PATH)
+            time.sleep(15)
         vcenter.change_network(vm, DDS_ETH_NAMES)
         vcenter.start_vm(vm)
 
@@ -322,7 +326,6 @@ if __name__ == "__main__":
                                DDS.DDS_USERNAME_NEW, DDS.DDS_PASSWORD_NEW)
         print("Execute vm output: ", output)
 
-        vcenter.reboot_vm(vm)
     elif device == "bam":
         source_vm_full_name = VCENTER_TEMPLATE + BAM_VERSION
         cloned_vm_full_name = VCENTER_CLONE_PATH + BAM_VERSION
@@ -341,7 +344,10 @@ if __name__ == "__main__":
             vm = get_vm_by_name(cloned_vm_full_name)
 
         vcenter.stop_vm(vm)
-        add_virtual_disc_drive(vm, BAM_ISO_PATH)
+        if SUPPORT_DHCP:
+            add_virtual_disc_drive(vm, BAM_ISO_PATH)
+            time.sleep(15)
+
         vcenter.start_vm(vm)
 
         # copy script to sever
@@ -372,4 +378,6 @@ if __name__ == "__main__":
         # output = execute_sh_vm(vm, BAM.BAM_USERNAME, BAM.BAM_PASSWORD, host_bash_file_path, temp_sh_path_in_host)
         print("Execute vm output: ", output)
 
+    if vm and SUPPORT_DHCP:
+        time.sleep(15)
         vcenter.reboot_vm(vm)
