@@ -16,6 +16,7 @@ SYSLOG_IMAGE_NAME = 'syslog_mon_amd64.tar.gz'
 DNS_STAT_IMAGE_NAME = 'dns-traffic-statistics-agent-amd64.tar.gz'
 
 PASSWORD_KEY = '### MY PASSPHRASE HERE ###'
+SUPPORT_DHCP = False
 
 
 class BAM:
