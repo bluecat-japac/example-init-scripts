@@ -427,6 +427,19 @@ cat <<EOF >> $INIT_CONFIG
 EOF
 fi
 
+# Support DHCP
+if [ "$( getconfig ENABLE_DHCP_V4 )" == "yes" ]; then
+cat <<EOF >> $INIT_CONFIG
+    "enable_dhcp_v4": true,
+EOF
+fi
+
+if [ "$( getconfig ENABLE_DHCP_V6 )"  == "yes" ]; then
+cat <<EOF >> $INIT_CONFIG
+    "enable_dhcp_v6": true,
+EOF
+fi
+
 if [ "$( getconfig syslog_host1 )" ]; then
 cat <<EOF >> $INIT_CONFIG
     "syslog": "$( getconfig syslog_host1 )",
