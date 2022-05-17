@@ -254,13 +254,6 @@ if enable_dhcp_v4 or enable_dhcp_v6:
     except Exception as ex:
         print("ERROR: Restart service networking: {}".format(str(ex)))
 
-    try:
-        subprocess.run('service psmd stop', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        print("check status psmd")
-    except Exception as ex:
-        print("ERROR: Start service psmd: {}".format(str(ex)))
-
-
 # Get available interfaces
 interfaces = {}
 with subprocess.Popen(['ip','link','show'], stdout=subprocess.PIPE) as iplinkcmd:
