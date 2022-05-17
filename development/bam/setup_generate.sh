@@ -16,8 +16,6 @@ sleep 5
 cat /etc/bcn/init-config.json
 sleep 3
 
-cat /etc/bcn/init-config.json
-
 echo "Run proteus_post_install.sh"
 /usr/local/bluecat/proteus_post_install.sh || true
 sleep 5

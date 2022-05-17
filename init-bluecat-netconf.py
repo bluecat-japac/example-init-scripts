@@ -160,10 +160,99 @@ with open("/etc/hostname","w") as etc_hostname:
 
 subprocess.call(["hostname", hostname])
 
+
+# Support DHCP
+enable_dhcp_v4 = meta.get('enable_dhcp_v4', False)
+enable_dhcp_v6 = meta.get('enable_dhcp_v6', False)
+
+
+def get_dhcp_address(ip_type, if_name):
+    result = address = netmask = ''
+    try:
+        if ip_type == 'v4':
+            dhcp_v4_data = subprocess.run('/usr/bin/ip addr show dev {} | /usr/bin/grep "inet.*global"'.format(if_name),
+                                          shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout
+            dhcp_v4_re = re.search('.*inet (.*)scope.*', dhcp_v4_data.decode("utf-8"))
+            result = dhcp_v4_re.group(1).strip()
+            try:
+                netmask = result.split('/')[1]
+                netmask = int(netmask) if not isinstance(netmask, int) else netmask
+            except Exception as ex:
+                print("ERROR: Get DHCPv4 address netmask: {}".format(str(ex)))
+                netmask = 32
+        if ip_type == 'v6':
+            dhcp_v6_data = subprocess.run('/usr/bin/ip addr show dev {} | /usr/bin/grep "inet6.*global"'.format(if_name),
+                                          shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout
+            dhcp_v6_re = re.search('.*inet6(.*)scope.*', dhcp_v6_data.decode("utf-8"))
+            result = dhcp_v6_re.group(1).strip()
+            try:
+                netmask = result.split('/')[1]
+                netmask = int(netmask) if not isinstance(netmask, int) else netmask
+            except Exception as ex:
+                print("ERROR: Get DHCP address netmask: {}".format(str(ex)))
+                netmask = 128
+        address = result.split('/')[0]
+    except Exception as ex:
+        print("ERROR: Get DHCP Address: {}".format(str(ex)))
+    return address, netmask
+
+
+# Support DHCP
+def check_interface(if_name):
+    is_check = subprocess.run(
+        ['/usr/bin/ip', 'addr', 'show', if_name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
+    if 'does not exist' not in is_check:
+        return True
+    return False
+
+
+def run_dhclient(dhcp_type):
+    cmd = '/usr/sbin/dhclient -6 ' if dhcp_type == 'v6' else '/usr/sbin/dhclient '
+    subprocess.run(cmd + 'eth0', shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if check_interface('eth2'):
+        subprocess.run(cmd + 'eth2', shell=True, stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT)
+    if is_bdds:
+        if check_interface('eth1'):
+            subprocess.run(cmd + 'eth1', shell=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+        if check_interface('eth4'):
+            subprocess.run(cmd + 'eth4', shell=True, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+
+
+def get_interface_data(if_name, enable_dhcp_v4, enable_dhcp_v6, if_data=''):
+    if if_name == 'eth0' or check_interface(if_name):
+        if_data += "auto {}\n".format(if_name)
+        if enable_dhcp_v4:
+            if_data += "\tiface {} inet dhcp\n".format(if_name)
+        if enable_dhcp_v6:
+            if_data += "\tiface {} inet6 dhcp\n".format(if_name)
+    return if_data
+
 # Use psmdbset tool to initialize PSM databases, and to set hostname
 # We use dummy addresses here, then replace them in the database below
 # psmdbset netconf -a <ip> -c <cidr> -g <gw> [-n <host>]
 psmdbset('netconf', '-a', '192.168.1.2', '-c', '24', '-g', '192.168.1.1', '-n', hostname)
+
+if enable_dhcp_v4 or enable_dhcp_v6:
+    with open('/etc/network/interfaces', 'w') as interfaces:
+        lo_data = 'auto lo\n\tiface lo inet loopback\n\tiface lo inet6 loopback\n'
+        interfaces.write(get_interface_data('eth0', enable_dhcp_v4, enable_dhcp_v6, if_data=lo_data))
+
+        if_data = get_interface_data('eth2', enable_dhcp_v4, enable_dhcp_v6)
+        if is_bdds:
+            if_data = get_interface_data('eth1', enable_dhcp_v4, enable_dhcp_v6, if_data=if_data)
+            if_data = get_interface_data('eth4', enable_dhcp_v4, enable_dhcp_v6, if_data=if_data)
+        interfaces.write(if_data)
+
+    try:
+        if enable_dhcp_v4:
+            run_dhclient('v4')
+        if enable_dhcp_v6:
+            run_dhclient('v6')
+    except Exception as ex:
+        print("ERROR: Restart service networking: {}".format(str(ex)))
 
 # Get available interfaces
 interfaces = {}
@@ -248,6 +337,15 @@ for ifdata in initdata['interfaces']:
             'type' : 'vlan',
             'vlanid' : vlanid
         }
+
+    if ifname != 'lo' and (enable_dhcp_v4 or enable_dhcp_v6):
+        if enable_dhcp_v4:
+            ifdata['v4addresses'][0]['address'] = get_dhcp_address('v4', ifname)[0]
+            ifdata['v4addresses'][0]['cidr'] = get_dhcp_address('v4', ifname)[1]
+        if enable_dhcp_v6:
+            ifdata['v6addresses'][0]['address'] = get_dhcp_address('v6', ifname)[0]
+            ifdata['v6addresses'][0]['cidr'] = get_dhcp_address('v6', ifname)[1]
+
     if interfaces.get(fullname):
         interfaces[fullname]['active'] = 1
         interfaces[fullname]['v4addresses'] = ifdata['v4addresses']
@@ -328,6 +426,7 @@ if om_mtu:
 
     # support configure mtu for the future reboot
     with open('/etc/network/interfaces', 'a+') as interfaces:
+        interfaces.write('\n')
         if is_bam:
             interfaces.write(post_up_template.format('eth0', om_mtu) + '\n')
         if is_eth2:
@@ -346,6 +445,7 @@ if srv_mtu:
                    stderr=subprocess.STDOUT)
     # support configure mtu for the future reboot
     with open('/etc/network/interfaces', 'a+') as interfaces:
+        interfaces.write('\n')
         if is_bdds:
             interfaces.write(post_up_template.format('eth0', srv_mtu) + '\n')
         interfaces.write(post_up_template.format('lo', srv_mtu) + '\n')
