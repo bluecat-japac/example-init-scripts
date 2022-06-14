@@ -413,6 +413,12 @@ then
 EOF
 fi
 
+# Support disables the per-client and per-server statistics.
+DNS_STAT_SERVICE_PATH=/lib/systemd/system/docker.dns_stat_agent.service
+if [ "$( getconfig ENABLE_PER_CLIENT_TRAFFIC_STATS )" == "false" ]; then
+  sed -i '\|.*-v.*/replicated/jail/named/etc/.*|d' $DNS_STAT_SERVICE_PATH
+fi
+
 
 # Support config MTU
 if [ "$( getconfig SRV_MTU )" ]; then
@@ -591,6 +597,9 @@ if [ ! "$TRIAL_RUN" == "yes" ]; then
 	then
 		systemctl disable docker.syslog.service
 	fi
+
+
+
 
 fi
 # The INIT_CONFIG file will be processed, then deleted, after the post_install script runs
