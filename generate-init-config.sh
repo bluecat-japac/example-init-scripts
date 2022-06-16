@@ -414,9 +414,10 @@ EOF
 fi
 
 # Support disables the per-client and per-server statistics.
-DNS_STAT_SERVICE_PATH=/lib/systemd/system/docker.dns_stat_agent.service
+PACKETBEAT_SERVICE_PATH=/lib/systemd/system/docker.packetbeat.service
 if [ "$( getconfig ENABLE_PER_CLIENT_TRAFFIC_STATS )" == "false" ]; then
-  sed -i '\|.*-v.*/replicated/jail/named/etc/.*|d' $DNS_STAT_SERVICE_PATH
+  sed -i '\|.*-v.*/replicated/jail/named/etc/.*|a\
+                              -e ENABLE_PER_CLIENT_TRAFFIC_STATS=false              \\'  $PACKETBEAT_SERVICE_PATH
 fi
 
 
