@@ -599,9 +599,6 @@ if [ ! "$TRIAL_RUN" == "yes" ]; then
 		systemctl disable docker.syslog.service
 	fi
 
-
-
-
 fi
 # The INIT_CONFIG file will be processed, then deleted, after the post_install script runs
 
