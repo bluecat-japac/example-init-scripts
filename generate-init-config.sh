@@ -413,6 +413,13 @@ then
 EOF
 fi
 
+# Support disables the per-client and per-server statistics.
+PACKETBEAT_SERVICE_PATH=/lib/systemd/system/docker.packetbeat.service
+if [ "$( getconfig ENABLE_PER_CLIENT_TRAFFIC_STATS )" == "false" ]; then
+  sed -i '\|.*-v.*/replicated/jail/named/etc/.*|a\
+                              -e ENABLE_PER_CLIENT_TRAFFIC_STATS=false              \\'  $PACKETBEAT_SERVICE_PATH
+fi
+
 
 # Support config MTU
 if [ "$( getconfig SRV_MTU )" ]; then
