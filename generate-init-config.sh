@@ -51,10 +51,19 @@ function getconfig {
     cat ${CFGFILE_BUILTIN} ${CFGFILE} | grep "^"$1 | tail -1 | cut -d= -f2-
 }
 
+function convert_to_empty_string {
+    lower_str=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+    if [ "$lower_str" = "null" ]
+    then
+       echo ""
+       exit 1
+    fi
+    echo "$1"
+}
 
 function local_if_config {
     eth_if=$1
-    local_v6_ip=$( getconfig $2 )
+    local_v6_ip=$(convert_to_empty_string "$( getconfig $2 )")
     if [ -n "$local_v6_ip" ]
     then
         cat <<EOF
@@ -157,7 +166,7 @@ if [ "$OM_NET_MASK" ]
 then
 cat <<EOF >> $INIT_CONFIG
         {
-           "address" : "$( getconfig OM_${vm_seq} )",
+           "address" : "$(convert_to_empty_string "$( getconfig OM_${vm_seq} )")",
            "cidr" : $OM_NET_MASK
         }
 EOF
@@ -167,7 +176,7 @@ cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
             {
-               "address" : "$( getconfig OM_V6_${vm_seq} )",
+               "address" : "$(convert_to_empty_string "$( getconfig OM_V6_${vm_seq} )")",
                "cidr" : $( getconfig OM_V6_PREFIX )
             }
          ]
@@ -179,8 +188,8 @@ cat <<EOF >> $INIT_CONFIG
 EOF
 
 # Support loopback ips
-LOOPBACK=$( getconfig "LOOPBACK_${vm_seq}" )
-LOOPBACK_V6=$( getconfig "LOOPBACK_V6_${vm_seq}" )
+LOOPBACK=$(convert_to_empty_string "$( getconfig "LOOPBACK_${vm_seq}" )")
+LOOPBACK_V6=$(convert_to_empty_string "$( getconfig "LOOPBACK_V6_${vm_seq}" )")
 
 if [ "$LOOPBACK" ] || [ "$LOOPBACK_V6" ]
 then
@@ -229,12 +238,12 @@ cat <<EOF >> $INIT_CONFIG
    "default_routes" : [
       {
          "cidr" : 0,
-         "gateway" : "$( getconfig OM_GATEWAY )",
+         "gateway" : "$(convert_to_empty_string "$( getconfig OM_GATEWAY )")",
          "network" : "default"
       },
       {
          "cidr" : 0,
-         "gateway" : "$( getconfig OM_V6_GATEWAY )",
+         "gateway" : "$(convert_to_empty_string "$( getconfig OM_V6_GATEWAY )")",
          "network" : "default"
       }
    ],
@@ -272,7 +281,7 @@ if [ "$SERVER_NET_MASK" ]
 then
 cat <<EOF >> $INIT_CONFIG
         {
-           "address" : "$( getconfig SERVER_${vm_seq} )",
+           "address" : "$(convert_to_empty_string "$( getconfig SERVER_${vm_seq} )")",
            "cidr" : $SERVER_NET_MASK
         }
 EOF
@@ -282,7 +291,7 @@ cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
             {
-               "address" : "$( getconfig SERVER_V6_${vm_seq} )",
+               "address" : "$(convert_to_empty_string "$( getconfig SERVER_V6_${vm_seq} )")",
                "cidr" : $( getconfig SERVER_V6_PREFIX )
             }
          ]
@@ -318,7 +327,7 @@ if [ "$OM_NET_MASK" ]
 then
 cat <<EOF >> $INIT_CONFIG
             {
-              "address" : "$( getconfig OM_${dds_seq_suffix} )",
+              "address" : "$(convert_to_empty_string "$( getconfig OM_${dds_seq_suffix} )")",
               "cidr" : $OM_NET_MASK
             }
 EOF
@@ -328,7 +337,7 @@ cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
             {
-               "address" : "$( getconfig OM_V6_${dds_seq_suffix} )",
+               "address" : "$(convert_to_empty_string "$( getconfig OM_V6_${dds_seq_suffix} )")",
                "cidr" : $( getconfig OM_V6_PREFIX )
             }
          ]
@@ -340,8 +349,8 @@ cat <<EOF >> $INIT_CONFIG
 EOF
 
 # Support loopback ips
-LOOPBACK=$( getconfig "LOOPBACK_${vm_seq}" )
-LOOPBACK_V6=$( getconfig "LOOPBACK_V6_${vm_seq}" )
+LOOPBACK=$(convert_to_empty_string "$( getconfig "LOOPBACK_${vm_seq}" )")
+LOOPBACK_V6=$(convert_to_empty_string "$( getconfig "LOOPBACK_V6_${vm_seq}" )")
 
 if [ "$LOOPBACK" ] || [ "$LOOPBACK_V6" ]
 then
@@ -390,12 +399,12 @@ cat <<EOF >> $INIT_CONFIG
    "default_routes" : [
       {
          "cidr" : 0,
-         "gateway" : "$( getconfig SERVER_GATEWAY )",
+         "gateway" : "$(convert_to_empty_string "$( getconfig SERVER_GATEWAY )")",
          "network" : "default"
       },
       {
          "cidr" : 0,
-         "gateway" : "$( getconfig SERVER_V6_GATEWAY )",
+         "gateway" : "$(convert_to_empty_string "$( getconfig SERVER_V6_GATEWAY )")",
          "network" : "default"
       }
    ],
@@ -447,7 +456,7 @@ cat <<EOF >> $INIT_CONFIG
 EOF
 fi
 
-if [ "$( getconfig syslog_host1 )" ]; then
+if [ "$(convert_to_empty_string "$( getconfig syslog_host1 )")" ]; then
 cat <<EOF >> $INIT_CONFIG
     "syslog": "$( getconfig syslog_host1 )",
 EOF
@@ -459,7 +468,7 @@ EOF
 fi
 if [ "$( getconfig route1_network )" ]; then
 cat <<EOF >> $INIT_CONFIG
-    "routes" : [ { "gateway": "$( getconfig route1_gateway )", "network" : "$( getconfig route1_network )" } ],
+    "routes" : [ { "gateway": "$(convert_to_empty_string "$( getconfig route1_gateway )")", "network" : "$( getconfig route1_network )" } ],
 EOF
 fi
 
@@ -469,7 +478,7 @@ cat <<EOF >> $INIT_CONFIG
 EOF
 fi
 
-if [ "$( getconfig nameserver1 )" ]; then
+if [ "$(convert_to_empty_string "$( getconfig nameserver1 )")" ]; then
 cat <<EOF >> $INIT_CONFIG
     "nameservers" : [ "$( getconfig nameserver1 )" ],
 EOF
