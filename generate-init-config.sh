@@ -61,6 +61,20 @@ function convert_to_empty_string {
     echo "$1"
 }
 
+function append_if_address {
+    ip_address=$(convert_to_empty_string "$( getconfig $1 )")
+    netmask_or_prefix=$( getconfig $2 )
+    if [ "$ip_address" ] && [ "$netmask_or_prefix" ]
+    then
+        cat <<EOF >> $INIT_CONFIG
+        {
+           "address" : "$ip_address",
+           "cidr" : $netmask_or_prefix
+        }
+EOF
+    fi
+}
+
 function local_if_config {
     eth_if=$1
     local_v6_ip=$(convert_to_empty_string "$( getconfig $2 )")
@@ -161,79 +175,36 @@ cat <<EOF >> $INIT_CONFIG
          "v4addresses" : [
 EOF
 
-OM_NET_MASK=$( getconfig OM_NET_MASK )
-if [ "$OM_NET_MASK" ]
-then
-cat <<EOF >> $INIT_CONFIG
-        {
-           "address" : "$(convert_to_empty_string "$( getconfig OM_${vm_seq} )")",
-           "cidr" : $OM_NET_MASK
-        }
-EOF
-fi
-
+append_if_address OM_${vm_seq} OM_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
-            {
-               "address" : "$(convert_to_empty_string "$( getconfig OM_V6_${vm_seq} )")",
-               "cidr" : $( getconfig OM_V6_PREFIX )
-            }
+EOF
+
+append_if_address  OM_V6_${vm_seq} OM_V6_PREFIX
+cat <<EOF >> $INIT_CONFIG
          ]
       }
       ,
       {
          "name" : "eth2", $( local_if_config eth2 LOCAL_V6_${vm_seq} )
       }
+    ,
+    {
+       "name" : "lo",
+       "v4addresses" : [
 EOF
 
-# Support loopback ips
-LOOPBACK=$(convert_to_empty_string "$( getconfig "LOOPBACK_${vm_seq}" )")
-LOOPBACK_V6=$(convert_to_empty_string "$( getconfig "LOOPBACK_V6_${vm_seq}" )")
-
-if [ "$LOOPBACK" ] || [ "$LOOPBACK_V6" ]
-then
-LOOPBACK_NET_MASK=$( getconfig LOOPBACK_NET_MASK )
-LOOPBACK_V6_PREFIX=$( getconfig LOOPBACK_V6_PREFIX )
-
+append_if_address  LOOPBACK_${vm_seq} LOOPBACK_NET_MASK
 cat <<EOF >> $INIT_CONFIG
-  ,
-  {
-     "name" : "lo",
-     "v4addresses" : [
+         ],
+         "v6addresses" : [
 EOF
 
-if [ "$LOOPBACK_NET_MASK" ]
-then
-cat <<EOF >> $INIT_CONFIG
-        {
-             "address" : "$LOOPBACK",
-             "cidr" : $LOOPBACK_NET_MASK
-        }
-
-EOF
-fi
-
+ append_if_address  LOOPBACK_V6_${vm_seq} LOOPBACK_V6_PREFIX
  cat <<EOF >> $INIT_CONFIG
-   ],
-   "v6addresses" : [
-EOF
-if [ "$LOOPBACK_V6_PREFIX" ]
-then
-cat <<EOF >> $INIT_CONFIG
-        {
-             "address" : "$LOOPBACK_V6",
-             "cidr" : $LOOPBACK_V6_PREFIX
-        }
-EOF
-fi
-cat <<EOF >> $INIT_CONFIG
       ]
     }
-EOF
-fi
-
-cat <<EOF >> $INIT_CONFIG
    ],
    "default_routes" : [
       {
@@ -266,7 +237,6 @@ then
     else
         eth0_name="eth0"
     fi
-    SERVER_NET_MASK=$( getconfig SERVER_NET_MASK )
 
 cat <<EOF >> $INIT_CONFIG
 {
@@ -277,23 +247,14 @@ cat <<EOF >> $INIT_CONFIG
          "v4addresses" : [
 EOF
 
-if [ "$SERVER_NET_MASK" ]
-then
-cat <<EOF >> $INIT_CONFIG
-        {
-           "address" : "$(convert_to_empty_string "$( getconfig SERVER_${vm_seq} )")",
-           "cidr" : $SERVER_NET_MASK
-        }
-EOF
-fi
-
+append_if_address  SERVER_${vm_seq} SERVER_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
-            {
-               "address" : "$(convert_to_empty_string "$( getconfig SERVER_V6_${vm_seq} )")",
-               "cidr" : $( getconfig SERVER_V6_PREFIX )
-            }
+EOF
+
+append_if_address  SERVER_V6_${vm_seq} SERVER_V6_PREFIX
+cat <<EOF >> $INIT_CONFIG
          ]
       }
 EOF
@@ -315,7 +276,6 @@ cat <<EOF >> $INIT_CONFIG
 EOF
     fi
 
-OM_NET_MASK=$( getconfig OM_NET_MASK )
 cat <<EOF >> $INIT_CONFIG
       ,
       {
@@ -323,78 +283,36 @@ cat <<EOF >> $INIT_CONFIG
          "v4addresses" : [
 EOF
 
-if [ "$OM_NET_MASK" ]
-then
-cat <<EOF >> $INIT_CONFIG
-            {
-              "address" : "$(convert_to_empty_string "$( getconfig OM_${dds_seq_suffix} )")",
-              "cidr" : $OM_NET_MASK
-            }
-EOF
-fi
-
+append_if_address  OM_${dds_seq_suffix} OM_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
-            {
-               "address" : "$(convert_to_empty_string "$( getconfig OM_V6_${dds_seq_suffix} )")",
-               "cidr" : $( getconfig OM_V6_PREFIX )
-            }
+EOF
+
+append_if_address  OM_V6_${dds_seq_suffix} OM_V6_PREFIX
+cat <<EOF >> $INIT_CONFIG
          ]
       }
       ,
       {
          "name" : "eth4",  $( local_if_config eth4 LOCAL_V6_${dds_seq_suffix} )
       }
+    ,
+    {
+       "name" : "lo",
+       "v4addresses" : [
 EOF
 
-# Support loopback ips
-LOOPBACK=$(convert_to_empty_string "$( getconfig "LOOPBACK_${vm_seq}" )")
-LOOPBACK_V6=$(convert_to_empty_string "$( getconfig "LOOPBACK_V6_${vm_seq}" )")
-
-if [ "$LOOPBACK" ] || [ "$LOOPBACK_V6" ]
-then
-  LOOPBACK_NET_MASK=$( getconfig LOOPBACK_NET_MASK )
-  LOOPBACK_V6_PREFIX=$( getconfig LOOPBACK_V6_PREFIX )
-
-cat <<EOF >> $INIT_CONFIG
-  ,
-  {
-     "name" : "lo",
-     "v4addresses" : [
-EOF
-
-  if [ "$LOOPBACK_NET_MASK" ]
-  then
-  cat <<EOF >> $INIT_CONFIG
-      {
-           "address" : "$LOOPBACK",
-           "cidr" : $LOOPBACK_NET_MASK
-      }
-
-EOF
-fi
-
+append_if_address  LOOPBACK_${vm_seq} LOOPBACK_NET_MASK
  cat <<EOF >> $INIT_CONFIG
    ],
    "v6addresses" : [
 EOF
-if [ "$LOOPBACK_V6_PREFIX" ]
-  then
-  cat <<EOF >> $INIT_CONFIG
-      {
-           "address" : "$LOOPBACK_V6",
-           "cidr" : $LOOPBACK_V6_PREFIX
-      }
-EOF
-fi
- cat <<EOF >> $INIT_CONFIG
+
+append_if_address  LOOPBACK_V6_${vm_seq} LOOPBACK_V6_PREFIX
+cat <<EOF >> $INIT_CONFIG
   ]
     }
-EOF
-fi
-
-cat <<EOF >> $INIT_CONFIG
    ],
    "default_routes" : [
       {
