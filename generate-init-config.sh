@@ -207,16 +207,42 @@ EOF
     }
    ],
    "default_routes" : [
-      {
+EOF
+
+OM_GATEWAY=$(convert_to_empty_string "$( getconfig OM_GATEWAY )")
+if [ "$OM_GATEWAY" ]
+then
+    cat <<EOF >> $INIT_CONFIG
+        {
          "cidr" : 0,
-         "gateway" : "$(convert_to_empty_string "$( getconfig OM_GATEWAY )")",
-         "network" : "default"
-      },
-      {
-         "cidr" : 0,
-         "gateway" : "$(convert_to_empty_string "$( getconfig OM_V6_GATEWAY )")",
+         "gateway" : "$OM_GATEWAY",
          "network" : "default"
       }
+EOF
+fi
+
+
+OM_V6_GATEWAY=$(convert_to_empty_string "$( getconfig OM_V6_GATEWAY )")
+if [ "$OM_V6_GATEWAY" ]
+then
+
+    if [ "$OM_GATEWAY" ]
+    then
+     cat <<EOF >> $INIT_CONFIG
+        ,
+EOF
+    fi
+
+     cat <<EOF >> $INIT_CONFIG
+        {
+         "cidr" : 0,
+         "gateway" : "$OM_V6_GATEWAY",
+         "network" : "default"
+      }
+EOF
+fi
+
+cat <<EOF >> $INIT_CONFIG
    ],
 EOF
 
@@ -410,7 +436,7 @@ cat <<EOF >> $INIT_CONFIG
     "timezone" : "$( getconfig timezone )",
 EOF
 fi
-if [ "$( getconfig route1_network )" ]; then
+if [ "$(convert_to_empty_string "$( getconfig route1_network )")" ]; then
 cat <<EOF >> $INIT_CONFIG
     "routes" : [ { "gateway": "$(convert_to_empty_string "$( getconfig route1_gateway )")", "network" : "$( getconfig route1_network )" } ],
 EOF
@@ -428,7 +454,7 @@ cat <<EOF >> $INIT_CONFIG
 EOF
 fi
 
-if [ "$( getconfig snmp_trap_hosts )" ]; then
+if [ "$(convert_to_empty_string "$( getconfig snmp_trap_hosts )")" ]; then
 cat <<EOF >> $INIT_CONFIG
     "snmp" : {
       "trap_service" : {
@@ -556,9 +582,9 @@ fi
 # The INIT_CONFIG file will be processed, then deleted, after the post_install script runs
 
 # Configure syslog_monitoring, if installed and trap hosts provided in config.ini
-monitored_dns_servers="$( getconfig monitored_dns_servers | tr ',' ' ' )"
+monitored_dns_servers=$(convert_to_empty_string "$( getconfig monitored_dns_servers | tr ',' ' ' )")
 monitored_domain="$( getconfig monitored_domain )"
-syslog_mon_trap_hosts="$( getconfig syslog_mon_trap_hosts | tr ',' ' ' )"
+syslog_mon_trap_hosts=$(convert_to_empty_string "$( getconfig syslog_mon_trap_hosts | tr ',' ' ' )")
 
 SYSLOG_MON_PATH=/opt/syslog_monitoring/Config
 
