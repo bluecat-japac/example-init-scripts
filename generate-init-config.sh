@@ -61,16 +61,16 @@ function convert_to_empty_string {
     echo "$1"
 }
 
-function append_if_address {
+function interface_if_address {
     ip_address=$(convert_to_empty_string "$( getconfig $1 )")
     netmask_or_prefix=$( getconfig $2 )
     if [ "$ip_address" ] && [ "$netmask_or_prefix" ]
     then
         cat <<EOF >> $INIT_CONFIG
-        {
-           "address" : "$ip_address",
-           "cidr" : $netmask_or_prefix
-        }
+          {
+             "address" : "$ip_address",
+             "cidr" : $netmask_or_prefix
+          }
 EOF
     fi
 }
@@ -175,13 +175,13 @@ cat <<EOF >> $INIT_CONFIG
          "v4addresses" : [
 EOF
 
-append_if_address OM_${vm_seq} OM_NET_MASK
+interface_if_address OM_${vm_seq} OM_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
 EOF
 
-append_if_address  OM_V6_${vm_seq} OM_V6_PREFIX
+interface_if_address  OM_V6_${vm_seq} OM_V6_PREFIX
 cat <<EOF >> $INIT_CONFIG
          ]
       }
@@ -195,13 +195,13 @@ cat <<EOF >> $INIT_CONFIG
        "v4addresses" : [
 EOF
 
-append_if_address  LOOPBACK_${vm_seq} LOOPBACK_NET_MASK
+interface_if_address  LOOPBACK_${vm_seq} LOOPBACK_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
 EOF
 
- append_if_address  LOOPBACK_V6_${vm_seq} LOOPBACK_V6_PREFIX
+ interface_if_address  LOOPBACK_V6_${vm_seq} LOOPBACK_V6_PREFIX
  cat <<EOF >> $INIT_CONFIG
       ]
     }
@@ -247,13 +247,13 @@ cat <<EOF >> $INIT_CONFIG
          "v4addresses" : [
 EOF
 
-append_if_address  SERVER_${vm_seq} SERVER_NET_MASK
+interface_if_address  SERVER_${vm_seq} SERVER_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
 EOF
 
-append_if_address  SERVER_V6_${vm_seq} SERVER_V6_PREFIX
+interface_if_address  SERVER_V6_${vm_seq} SERVER_V6_PREFIX
 cat <<EOF >> $INIT_CONFIG
          ]
       }
@@ -283,13 +283,13 @@ cat <<EOF >> $INIT_CONFIG
          "v4addresses" : [
 EOF
 
-append_if_address  OM_${dds_seq_suffix} OM_NET_MASK
+interface_if_address  OM_${dds_seq_suffix} OM_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
 EOF
 
-append_if_address  OM_V6_${dds_seq_suffix} OM_V6_PREFIX
+interface_if_address  OM_V6_${dds_seq_suffix} OM_V6_PREFIX
 cat <<EOF >> $INIT_CONFIG
          ]
       }
@@ -303,28 +303,54 @@ cat <<EOF >> $INIT_CONFIG
        "v4addresses" : [
 EOF
 
-append_if_address  LOOPBACK_${vm_seq} LOOPBACK_NET_MASK
+interface_if_address  LOOPBACK_${vm_seq} LOOPBACK_NET_MASK
  cat <<EOF >> $INIT_CONFIG
    ],
    "v6addresses" : [
 EOF
 
-append_if_address  LOOPBACK_V6_${vm_seq} LOOPBACK_V6_PREFIX
+interface_if_address  LOOPBACK_V6_${vm_seq} LOOPBACK_V6_PREFIX
 cat <<EOF >> $INIT_CONFIG
-  ]
+     ]
     }
    ],
    "default_routes" : [
-      {
+EOF
+
+SERVER_GATEWAY=$(convert_to_empty_string "$( getconfig SERVER_GATEWAY )")
+if [ "$SERVER_GATEWAY" ]
+then
+    cat <<EOF >> $INIT_CONFIG
+        {
          "cidr" : 0,
-         "gateway" : "$(convert_to_empty_string "$( getconfig SERVER_GATEWAY )")",
-         "network" : "default"
-      },
-      {
-         "cidr" : 0,
-         "gateway" : "$(convert_to_empty_string "$( getconfig SERVER_V6_GATEWAY )")",
+         "gateway" : "$SERVER_GATEWAY",
          "network" : "default"
       }
+EOF
+fi
+
+
+SERVER_V6_GATEWAY=$(convert_to_empty_string "$( getconfig SERVER_V6_GATEWAY )")
+if [ "$SERVER_V6_GATEWAY" ]
+then
+
+    if [ "$SERVER_GATEWAY" ]
+    then
+     cat <<EOF >> $INIT_CONFIG
+        ,
+EOF
+    fi
+
+     cat <<EOF >> $INIT_CONFIG
+        {
+         "cidr" : 0,
+         "gateway" : "$SERVER_V6_GATEWAY",
+         "network" : "default"
+      }
+EOF
+fi
+
+cat <<EOF >> $INIT_CONFIG
    ],
 EOF
 
