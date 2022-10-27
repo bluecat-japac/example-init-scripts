@@ -51,10 +51,33 @@ function getconfig {
     cat ${CFGFILE_BUILTIN} ${CFGFILE} | grep "^"$1 | tail -1 | cut -d= -f2-
 }
 
+function convert_to_empty_string {
+    lower_str=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+    if [ "$lower_str" = "null" ]
+    then
+       echo ""
+       exit 1
+    fi
+    echo "$1"
+}
+
+function interface_if_address {
+    ip_address=$(convert_to_empty_string "$( getconfig $1 )")
+    netmask_or_prefix=$( getconfig $2 )
+    if [ "$ip_address" ] && [ "$netmask_or_prefix" ]
+    then
+        cat <<EOF >> $INIT_CONFIG
+          {
+             "address" : "$ip_address",
+             "cidr" : $netmask_or_prefix
+          }
+EOF
+    fi
+}
 
 function local_if_config {
     eth_if=$1
-    local_v6_ip=$( getconfig $2 )
+    local_v6_ip=$(convert_to_empty_string "$( getconfig $2 )")
     if [ -n "$local_v6_ip" ]
     then
         cat <<EOF
@@ -152,91 +175,74 @@ cat <<EOF >> $INIT_CONFIG
          "v4addresses" : [
 EOF
 
-OM_NET_MASK=$( getconfig OM_NET_MASK )
-if [ "$OM_NET_MASK" ]
-then
-cat <<EOF >> $INIT_CONFIG
-        {
-           "address" : "$( getconfig OM_${vm_seq} )",
-           "cidr" : $OM_NET_MASK
-        }
-EOF
-fi
-
+interface_if_address OM_${vm_seq} OM_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
-            {
-               "address" : "$( getconfig OM_V6_${vm_seq} )",
-               "cidr" : $( getconfig OM_V6_PREFIX )
-            }
+EOF
+
+interface_if_address  OM_V6_${vm_seq} OM_V6_PREFIX
+cat <<EOF >> $INIT_CONFIG
          ]
       }
       ,
       {
          "name" : "eth2", $( local_if_config eth2 LOCAL_V6_${vm_seq} )
       }
+    ,
+    {
+       "name" : "lo",
+       "v4addresses" : [
 EOF
 
-# Support loopback ips
-LOOPBACK=$( getconfig "LOOPBACK_${vm_seq}" )
-LOOPBACK_V6=$( getconfig "LOOPBACK_V6_${vm_seq}" )
-
-if [ "$LOOPBACK" ] || [ "$LOOPBACK_V6" ]
-then
-LOOPBACK_NET_MASK=$( getconfig LOOPBACK_NET_MASK )
-LOOPBACK_V6_PREFIX=$( getconfig LOOPBACK_V6_PREFIX )
-
+interface_if_address  LOOPBACK_${vm_seq} LOOPBACK_NET_MASK
 cat <<EOF >> $INIT_CONFIG
-  ,
-  {
-     "name" : "lo",
-     "v4addresses" : [
+         ],
+         "v6addresses" : [
 EOF
 
-if [ "$LOOPBACK_NET_MASK" ]
-then
-cat <<EOF >> $INIT_CONFIG
-        {
-             "address" : "$LOOPBACK",
-             "cidr" : $LOOPBACK_NET_MASK
-        }
-
-EOF
-fi
-
+ interface_if_address  LOOPBACK_V6_${vm_seq} LOOPBACK_V6_PREFIX
  cat <<EOF >> $INIT_CONFIG
-   ],
-   "v6addresses" : [
-EOF
-if [ "$LOOPBACK_V6_PREFIX" ]
-then
-cat <<EOF >> $INIT_CONFIG
-        {
-             "address" : "$LOOPBACK_V6",
-             "cidr" : $LOOPBACK_V6_PREFIX
-        }
-EOF
-fi
-cat <<EOF >> $INIT_CONFIG
       ]
     }
+   ],
+   "default_routes" : [
+EOF
+
+OM_GATEWAY=$(convert_to_empty_string "$( getconfig OM_GATEWAY )")
+if [ "$OM_GATEWAY" ]
+then
+    cat <<EOF >> $INIT_CONFIG
+        {
+         "cidr" : 0,
+         "gateway" : "$OM_GATEWAY",
+         "network" : "default"
+      }
+EOF
+fi
+
+
+OM_V6_GATEWAY=$(convert_to_empty_string "$( getconfig OM_V6_GATEWAY )")
+if [ "$OM_V6_GATEWAY" ]
+then
+
+    if [ "$OM_GATEWAY" ]
+    then
+     cat <<EOF >> $INIT_CONFIG
+        ,
+EOF
+    fi
+
+     cat <<EOF >> $INIT_CONFIG
+        {
+         "cidr" : 0,
+         "gateway" : "$OM_V6_GATEWAY",
+         "network" : "default"
+      }
 EOF
 fi
 
 cat <<EOF >> $INIT_CONFIG
-   ],
-   "default_routes" : [
-      {
-         "cidr" : 0,
-         "gateway" : "$( getconfig OM_GATEWAY )",
-         "network" : "default"
-      },
-      {
-         "cidr" : 0,
-         "gateway" : "$( getconfig OM_V6_GATEWAY )",
-         "network" : "default"
-      }
    ],
 EOF
 
@@ -257,7 +263,6 @@ then
     else
         eth0_name="eth0"
     fi
-    SERVER_NET_MASK=$( getconfig SERVER_NET_MASK )
 
 cat <<EOF >> $INIT_CONFIG
 {
@@ -268,23 +273,14 @@ cat <<EOF >> $INIT_CONFIG
          "v4addresses" : [
 EOF
 
-if [ "$SERVER_NET_MASK" ]
-then
-cat <<EOF >> $INIT_CONFIG
-        {
-           "address" : "$( getconfig SERVER_${vm_seq} )",
-           "cidr" : $SERVER_NET_MASK
-        }
-EOF
-fi
-
+interface_if_address  SERVER_${vm_seq} SERVER_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
-            {
-               "address" : "$( getconfig SERVER_V6_${vm_seq} )",
-               "cidr" : $( getconfig SERVER_V6_PREFIX )
-            }
+EOF
+
+interface_if_address  SERVER_V6_${vm_seq} SERVER_V6_PREFIX
+cat <<EOF >> $INIT_CONFIG
          ]
       }
 EOF
@@ -306,7 +302,6 @@ cat <<EOF >> $INIT_CONFIG
 EOF
     fi
 
-OM_NET_MASK=$( getconfig OM_NET_MASK )
 cat <<EOF >> $INIT_CONFIG
       ,
       {
@@ -314,90 +309,74 @@ cat <<EOF >> $INIT_CONFIG
          "v4addresses" : [
 EOF
 
-if [ "$OM_NET_MASK" ]
-then
-cat <<EOF >> $INIT_CONFIG
-            {
-              "address" : "$( getconfig OM_${dds_seq_suffix} )",
-              "cidr" : $OM_NET_MASK
-            }
-EOF
-fi
-
+interface_if_address  OM_${dds_seq_suffix} OM_NET_MASK
 cat <<EOF >> $INIT_CONFIG
          ],
          "v6addresses" : [
-            {
-               "address" : "$( getconfig OM_V6_${dds_seq_suffix} )",
-               "cidr" : $( getconfig OM_V6_PREFIX )
-            }
+EOF
+
+interface_if_address  OM_V6_${dds_seq_suffix} OM_V6_PREFIX
+cat <<EOF >> $INIT_CONFIG
          ]
       }
       ,
       {
          "name" : "eth4",  $( local_if_config eth4 LOCAL_V6_${dds_seq_suffix} )
       }
+    ,
+    {
+       "name" : "lo",
+       "v4addresses" : [
 EOF
 
-# Support loopback ips
-LOOPBACK=$( getconfig "LOOPBACK_${vm_seq}" )
-LOOPBACK_V6=$( getconfig "LOOPBACK_V6_${vm_seq}" )
-
-if [ "$LOOPBACK" ] || [ "$LOOPBACK_V6" ]
-then
-  LOOPBACK_NET_MASK=$( getconfig LOOPBACK_NET_MASK )
-  LOOPBACK_V6_PREFIX=$( getconfig LOOPBACK_V6_PREFIX )
-
-cat <<EOF >> $INIT_CONFIG
-  ,
-  {
-     "name" : "lo",
-     "v4addresses" : [
-EOF
-
-  if [ "$LOOPBACK_NET_MASK" ]
-  then
-  cat <<EOF >> $INIT_CONFIG
-      {
-           "address" : "$LOOPBACK",
-           "cidr" : $LOOPBACK_NET_MASK
-      }
-
-EOF
-fi
-
+interface_if_address  LOOPBACK_${vm_seq} LOOPBACK_NET_MASK
  cat <<EOF >> $INIT_CONFIG
    ],
    "v6addresses" : [
 EOF
-if [ "$LOOPBACK_V6_PREFIX" ]
-  then
-  cat <<EOF >> $INIT_CONFIG
-      {
-           "address" : "$LOOPBACK_V6",
-           "cidr" : $LOOPBACK_V6_PREFIX
+
+interface_if_address  LOOPBACK_V6_${vm_seq} LOOPBACK_V6_PREFIX
+cat <<EOF >> $INIT_CONFIG
+     ]
+    }
+   ],
+   "default_routes" : [
+EOF
+
+SERVER_GATEWAY=$(convert_to_empty_string "$( getconfig SERVER_GATEWAY )")
+if [ "$SERVER_GATEWAY" ]
+then
+    cat <<EOF >> $INIT_CONFIG
+        {
+         "cidr" : 0,
+         "gateway" : "$SERVER_GATEWAY",
+         "network" : "default"
       }
 EOF
 fi
- cat <<EOF >> $INIT_CONFIG
-  ]
-    }
+
+
+SERVER_V6_GATEWAY=$(convert_to_empty_string "$( getconfig SERVER_V6_GATEWAY )")
+if [ "$SERVER_V6_GATEWAY" ]
+then
+
+    if [ "$SERVER_GATEWAY" ]
+    then
+     cat <<EOF >> $INIT_CONFIG
+        ,
+EOF
+    fi
+
+     cat <<EOF >> $INIT_CONFIG
+        {
+         "cidr" : 0,
+         "gateway" : "$SERVER_V6_GATEWAY",
+         "network" : "default"
+      }
 EOF
 fi
 
 cat <<EOF >> $INIT_CONFIG
-   ],
-   "default_routes" : [
-      {
-         "cidr" : 0,
-         "gateway" : "$( getconfig SERVER_GATEWAY )",
-         "network" : "default"
-      },
-      {
-         "cidr" : 0,
-         "gateway" : "$( getconfig SERVER_V6_GATEWAY )",
-         "network" : "default"
-      }
    ],
 EOF
 
@@ -447,7 +426,7 @@ cat <<EOF >> $INIT_CONFIG
 EOF
 fi
 
-if [ "$( getconfig syslog_host1 )" ]; then
+if [ "$(convert_to_empty_string "$( getconfig syslog_host1 )")" ]; then
 cat <<EOF >> $INIT_CONFIG
     "syslog": "$( getconfig syslog_host1 )",
 EOF
@@ -457,9 +436,9 @@ cat <<EOF >> $INIT_CONFIG
     "timezone" : "$( getconfig timezone )",
 EOF
 fi
-if [ "$( getconfig route1_network )" ]; then
+if [ "$(convert_to_empty_string "$( getconfig route1_network )")" ]; then
 cat <<EOF >> $INIT_CONFIG
-    "routes" : [ { "gateway": "$( getconfig route1_gateway )", "network" : "$( getconfig route1_network )" } ],
+    "routes" : [ { "gateway": "$(convert_to_empty_string "$( getconfig route1_gateway )")", "network" : "$( getconfig route1_network )" } ],
 EOF
 fi
 
@@ -469,13 +448,13 @@ cat <<EOF >> $INIT_CONFIG
 EOF
 fi
 
-if [ "$( getconfig nameserver1 )" ]; then
+if [ "$(convert_to_empty_string "$( getconfig nameserver1 )")" ]; then
 cat <<EOF >> $INIT_CONFIG
     "nameservers" : [ "$( getconfig nameserver1 )" ],
 EOF
 fi
 
-if [ "$( getconfig snmp_trap_hosts )" ]; then
+if [ "$(convert_to_empty_string "$( getconfig snmp_trap_hosts )")" ]; then
 cat <<EOF >> $INIT_CONFIG
     "snmp" : {
       "trap_service" : {
@@ -603,9 +582,9 @@ fi
 # The INIT_CONFIG file will be processed, then deleted, after the post_install script runs
 
 # Configure syslog_monitoring, if installed and trap hosts provided in config.ini
-monitored_dns_servers="$( getconfig monitored_dns_servers | tr ',' ' ' )"
+monitored_dns_servers=$(convert_to_empty_string "$( getconfig monitored_dns_servers | tr ',' ' ' )")
 monitored_domain="$( getconfig monitored_domain )"
-syslog_mon_trap_hosts="$( getconfig syslog_mon_trap_hosts | tr ',' ' ' )"
+syslog_mon_trap_hosts=$(convert_to_empty_string "$( getconfig syslog_mon_trap_hosts | tr ',' ' ' )")
 
 SYSLOG_MON_PATH=/opt/syslog_monitoring/Config
 
