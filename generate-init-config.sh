@@ -629,7 +629,13 @@ EOF
     #modify syslog config.ini dds_server ip address
     if [ -f ${SYSLOG_MON_PATH}/config.ini ]
     then
-        ntp_check_ip="$( getconfig OM_${dds_seq_suffix})"
+        echo "$( getconfig OM_${dds_seq_suffix})" |grep "\." >/dev/null 2>&1
+        if [ $? == 0 ]
+        then
+            ntp_check_ip="$( getconfig OM_${dds_seq_suffix})"
+        else
+            ntp_check_ip=$(convert_to_empty_string "$( getconfig OM_V6_${dds_seq_suffix})")
+        fi
         sed -i.bak "s/^bdds_server.*/bdds_server = ${ntp_check_ip}/" ${SYSLOG_MON_PATH}/config.ini
     fi
 fi
