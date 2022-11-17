@@ -24,7 +24,6 @@ import pwd
 import shutil
 import re
 import json
-import sqlite3
 
 sys.path.append('/usr/local/cli/scripts')
 # Note: cli modules log to /var/log/cli.log
@@ -123,17 +122,19 @@ if 'hostname' in initdata:
 
 # Find the primary IP address. This may be a VLAN interface
 # We make the first IPv4 address on eth0 the primary address
+eth0_subnet = 32
 eth0_data = next(x for x in initdata['interfaces'] if x['name'].split('.')[0] == 'eth0')
 eth0_address = eth0_data['v4addresses'][0]['address'] if eth0_data['v4addresses'] else {}
 if not eth0_address:
     eth0_address = eth0_data['v6addresses'][0]['address']
+    eth0_subnet = 128
 
 # update database configuration on BAM to reflect IP address change
 # Note slony/database.conf does not exist yet; it will be created when postgres is started for the first time
 if os.path.exists(DB_CONF):
     # ("Updating pg_hba.conf with address %s", eth0_address)
     subprocess.call(["sed", "-i",
-         "-e", "/^host all postgres/ c\\host all postgres %s\\/32 trust" % eth0_address,
+         "-e", "/^host all postgres/ c\\host all postgres %s\\/%s trust" % (eth0_address, eth0_subnet),
           DB_CONF])
 
     # ("Updating proteusdb.bluecatnetworks.corp with address %s", eth0_address)
@@ -371,10 +372,16 @@ if 'route1_network' in meta and 'route1_gateway' in meta:
 
 for route in metadata_routes:
     networkWithCidr = route['network']
+    cidr = 0
+    try:
+        cidr = int(networkWithCidr.split('/')[1])
+    except Exception as e:
+        print('Failed to get CIDR: %s' % e)
+
     routes_list.append({
-         "network" : networkWithCidr.split('/')[0],
-         "cidr" : networkWithCidr.split('/')[1],
-         "gateway" : route['gateway']
+        "network": networkWithCidr.split('/')[0],
+        "cidr": cidr,
+        "gateway": route['gateway']
     })
 
 interfaces_list = [ interfaces[ifname] for ifname in sorted(interfaces.keys()) ]
