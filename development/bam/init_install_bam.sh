@@ -56,9 +56,10 @@ ln -s /lib/systemd/system/init-config-stage1.service /mnt/etc/systemd/system/pos
 ln -s /lib/systemd/system/init-config-stage2.service /mnt/etc/systemd/system/post_install.service.wants/
 
 # BAM Only: Modify config.yml to exclude protocol (TLS1.0 & TLS1.1) and CipherSuites SHA/SHA1
-sed -i "/'\.\*DSS\.\*'/a\
-\        - '.*SHA.*'\n\
-        - '.*SHA1.*'\n"  /mnt/opt/server/proteus/config.yml
+# temporary comment for setting up strust relation managerment
+# sed -i "/'\.\*DSS\.\*'/a\
+# \        - '.*SHA.*'\n\
+#         - '.*SHA1.*'\n"  /mnt/opt/server/proteus/config.yml
 
 sed -i "/'SSLv3'/a\
 \        - 'TLSv1' \n\
