@@ -24,6 +24,7 @@ import pwd
 import shutil
 import re
 import json
+import ipaddress
 
 sys.path.append('/usr/local/cli/scripts')
 # Note: cli modules log to /var/log/cli.log
@@ -127,6 +128,7 @@ eth0_data = next(x for x in initdata['interfaces'] if x['name'].split('.')[0] ==
 eth0_address = eth0_data['v4addresses'][0]['address'] if eth0_data['v4addresses'] else {}
 if not eth0_address:
     eth0_address = eth0_data['v6addresses'][0]['address']
+    eth0_address = ipaddress.IPv6Address(eth0_address).compressed
     eth0_subnet = 128
 
 # update database configuration on BAM to reflect IP address change
