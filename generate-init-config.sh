@@ -253,7 +253,7 @@ then
     # We add the number of BAM VMs to the BDDS VM number to get the index in to
     # the management interface address tables
     # Use perl printf %0<n>d to retain correct number of leading zeros
-    dds_seq_suffix=$(perl -e "printf '%0'.length('${vm_seq}').'d', (${vm_seq} + ${bam_vm_num})")
+    dds_seq_suffix=$(perl -e "printf '%0'.length('${vm_seq}').'d', ('${vm_seq}' + ${bam_vm_num})")
     echo "bam_vm_num = ${bam_vm_num}, dds_seq_suffix = ${dds_seq_suffix}"
 
     SERVER_VLAN_ID=$( getconfig SERVER_VLAN_ID )
