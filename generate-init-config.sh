@@ -130,6 +130,23 @@ EOF
     fi
 }
 
+# Example vm_names:
+# vBLUECAT_vBLUECAT_0001_BAM_0001
+#         vm_name_prefix ^^^
+# vBLUECAT_vBLUECAT_0001_DDS_0001
+#                            ^^^^ vm_seq
+# The separator can be '-' or '_'
+
+vm_name=$( getconfig vm_name )
+system_type=`arch`
+if [ $system_type == x86_64 ]
+then
+	vm_name_prefix=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $(NF - 1)}')
+else
+	vm_name_prefix=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $(NF - 2)}')
+fi
+
+
 # modify 50-cloud-init mtu
 if [ "$( getconfig SRV_MTU )" ]; then
     srv_mtu=$( getconfig SRV_MTU )
@@ -162,21 +179,7 @@ else
     fi
 fi
 
-# Example vm_names:
-# vBLUECAT_vBLUECAT_0001_BAM_0001
-#         vm_name_prefix ^^^
-# vBLUECAT_vBLUECAT_0001_DDS_0001
-#                            ^^^^ vm_seq
-# The separator can be '-' or '_'
 
-vm_name=$( getconfig vm_name )
-system_type=`arch`
-if [ $system_type == x86_64 ]
-then
-	vm_name_prefix=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $(NF - 1)}')
-else
-	vm_name_prefix=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $(NF - 2)}')
-fi
 vm_seq=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $NF}')
 bam_vm_num=$( getconfig bam_num )
 
