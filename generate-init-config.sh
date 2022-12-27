@@ -145,6 +145,41 @@ then
 else
 	vm_name_prefix=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $(NF - 2)}')
 fi
+
+
+# modify 50-cloud-init mtu
+if [ "$( getconfig SRV_MTU )" ]; then
+    srv_mtu=$( getconfig SRV_MTU )
+fi
+
+if [ "$( getconfig OM_MTU )" ]; then
+    om_mtu=$( getconfig OM_MTU )
+fi
+
+if [ "${vm_name_prefix}" = "BAM" ]
+then
+    if [ -f /etc/network/interfaces.d/50-cloud-init ]
+    then
+        init_mtu=`grep mtu /etc/network/interfaces.d/50-cloud-init | wc -l`
+        if [ $init_mtu -ne 0 ]
+        then
+            sed -i "s/mtu.*/mtu ${om_mtu}/g" /etc/network/interfaces.d/50-cloud-init
+        fi
+    fi
+else
+    if [ -f /etc/network/interfaces.d/50-cloud-init ]
+    then
+        init_mtu=`grep mtu /etc/network/interfaces.d/50-cloud-init | wc -l`
+        if [ $init_mtu -ne 0 ]
+        then
+            sed -i -z "s/mtu.*/mtu ${srv_mtu}/1m" /etc/network/interfaces.d/50-cloud-init
+            sed -i -z "s/mtu.*/mtu ${om_mtu}/2m" /etc/network/interfaces.d/50-cloud-init
+            sed -i -z "s/mtu.*/mtu ${om_mtu}/3m" /etc/network/interfaces.d/50-cloud-init
+        fi
+    fi
+fi
+
+
 vm_seq=$( getconfig vm_name | tr "-" "_" | awk -F "_" '{print $NF}')
 bam_vm_num=$( getconfig bam_num )
 
@@ -639,7 +674,6 @@ EOF
         sed -i.bak "s/^bdds_server.*/bdds_server = ${ntp_check_ip}/" ${SYSLOG_MON_PATH}/config.ini
     fi
 fi
-
 
 if [ ! "$TRIAL_RUN" == "yes" ]; then
     # Remove config.ini to stop this script running again

@@ -519,7 +519,7 @@ snmp_template = {
         },
         "v3": {
             "securitylevel" : "noauth|auth|priv",
-            "privtype" : "DES|AES-128",
+            "privtype" : "DES|AES128",
             "username" : str,
             "enabled" : bool,
             "privphrase": str,
@@ -543,7 +543,7 @@ snmp_template = {
                 },
                 "v3": {
                     "securitylevel" : "noauth|auth|priv",
-                    "privtype" : "DES|AES-128",
+                    "privtype" : "DES|AES128",
                     "username" : str,
                     "enabled" : bool,
                     "privphrase": str,
